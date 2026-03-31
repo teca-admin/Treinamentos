@@ -237,11 +237,13 @@ app.post("/api/treinamentos/responder", async (req, res) => {
 });
 
 app.get("/api/treinamentos/resultados", async (req, res) => {
-  const { contrato } = req.query;
+  const { contrato, funcionario_id } = req.query;
   let query = supabase
     .from("resultados_treinamento")
     .select(`id, nota, status, data_conclusao, curso_id, funcionario_id, funcionarios ( nome, matricula ), cursos ( nome )`)
     .order("id", { ascending: false });
+
+  if (funcionario_id) query = query.eq("funcionario_id", funcionario_id);
 
   const { data: results } = await query;
   const processedResults = results?.map((r: any) => {
