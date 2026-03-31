@@ -231,7 +231,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           )}
         </div>
 
-        <div className="p-8 flex-1 overflow-y-auto">
+        <div className="p-4 md:p-8 flex-1 overflow-y-auto">
           {step === 1 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-sm mx-auto space-y-6 bg-white p-8 rounded-2xl shadow-xl mt-20">
               <h2 className="text-xl font-medium text-center text-slate-800">Acesse seus Treinamentos</h2>
@@ -257,7 +257,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           {step === 2 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto w-full space-y-6">
               <h2 className="text-lg font-medium  text-slate-700 border-b pb-4 mb-6">Seus Cursos Disponíveis</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
                 {cursos.map(c => (
                   <div 
                     key={c.id} 
@@ -281,21 +281,21 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                         </div>
                       )}
                     </div>
-                    <div className="p-4 flex-1 flex flex-col">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className={`font-medium ${!c.isBlocked && 'group-hover:text-wfs-accent'} transition-colors`}>{c.nome}</h3>
+                    <div className="p-3 md:p-4 flex-1 flex flex-col">
+                      <div className="flex justify-between items-start mb-2 gap-2">
+                        <h3 className={`font-medium text-sm md:text-base leading-tight ${!c.isBlocked && 'group-hover:text-wfs-accent'} transition-colors`}>{c.nome}</h3>
                         {c.isApproved && (
-                          <span className="bg-green-100 text-green-700 text-[8px] font-medium px-1.5 py-0.5 rounded ">Aprovado</span>
+                          <span className="bg-green-100 text-green-700 text-[8px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap">Aprovado</span>
                         )}
                       </div>
-                      <div className="flex items-center justify-between mt-auto pt-4">
-                        <div className={`flex items-center text-[10px] font-medium  gap-1 ${c.isBlocked ? 'text-slate-400' : 'text-wfs-accent'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-auto pt-3 md:pt-4 gap-2">
+                        <div className={`flex items-center text-[9px] md:text-[10px] font-medium gap-1 ${c.isBlocked ? 'text-slate-400' : 'text-wfs-accent'}`}>
                           {isCursoLoading && selectedCurso?.id === c.id ? (
                             <div className="w-3 h-3 border-2 border-wfs-accent/30 border-t-wfs-accent rounded-full animate-spin mr-1" />
                           ) : null}
-                          {c.isBlocked ? c.blockReason : (c.isApproved ? 'Refazer Treinamento' : 'Iniciar Treinamento')} {!c.isBlocked && <ChevronRight className="w-3 h-3" />}
+                          {c.isBlocked ? c.blockReason : (c.isApproved ? 'Refazer' : 'Iniciar Treinamento')} {!c.isBlocked && <ChevronRight className="w-3 h-3" />}
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right">
                           <p className="text-xs text-slate-500 font-medium ">
                             Até {c.data_fim ? new Date(c.data_fim).toLocaleDateString() : '-'}
                           </p>
