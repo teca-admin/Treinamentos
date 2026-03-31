@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { LogOut } from "lucide-react";
 
 // Components
@@ -32,7 +32,7 @@ export default function App() {
             alt="WFS Logo" 
             className="h-12 object-contain"
           />
-          <span className="bg-wfs-accent-light text-wfs-accent-dark text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-sm border border-wfs-accent/20">
+          <span className="bg-wfs-accent-light text-wfs-accent-dark text-[10px] font-medium  tracking-widest px-3 py-1 rounded-sm border border-wfs-accent/20">
             Treinamentos
           </span>
         </div>
@@ -60,9 +60,9 @@ export default function App() {
 
       {/* Footer */}
       <footer className="h-12 bg-wfs-surface border-t border-wfs-border flex items-center justify-between px-6 text-[11px] font-medium font-mono text-wfs-hint">
-        <div>WFS v1.0.0 • Plataforma de Treinamentos</div>
+        <div>WFS v1.0.0 â€¢ Plataforma de Treinamentos</div>
         <div className="flex gap-4">
-          <button onClick={() => setIsPortal(true)} className="hover:text-wfs-accent transition-colors font-sans uppercase font-bold text-[10px]">
+          <button onClick={() => setIsPortal(true)} className="hover:text-wfs-accent transition-colors font-sans  font-medium text-[10px]">
             Acessar Portal do Colaborador
           </button>
         </div>
@@ -70,3 +70,4 @@ export default function App() {
     </div>
   );
 }
+

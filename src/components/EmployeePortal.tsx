@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { ChevronRight, Video, ClipboardList, ArrowLeft, CheckCircle, AlertCircle, Lock, LogOut, Search, Filter } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -32,10 +32,10 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
     
     setIsLoginLoading(true);
     try {
-      const res = await fetch("/api/search?q=" + matricula);
+      const res = await fetch("/api/funcionarios/matricula/" + matricula);
       const data = await res.json();
-      if (data.length > 0) {
-        const emp = data[0];
+      if (data.success && data.funcionario) {
+        const emp = data.funcionario;
         setEmployee(emp);
         
         const [rres, cres] = await Promise.all([
@@ -68,9 +68,9 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           
           let isBlocked = !isStarted || !isNotEnded || attemptsExceeded || isApproved;
           let blockReason = "";
-          if (!isStarted) blockReason = "Ainda não disponível";
-          else if (!isNotEnded) blockReason = "Período encerrado";
-          else if (isApproved) blockReason = "Treinamento Concluído";
+          if (!isStarted) blockReason = "Ainda nÃ£o disponÃ­vel";
+          else if (!isNotEnded) blockReason = "PerÃ­odo encerrado";
+          else if (isApproved) blockReason = "Treinamento ConcluÃ­do";
           else if (attemptsExceeded) blockReason = "Limite de tentativas excedido (3)";
           
           return {
@@ -85,7 +85,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
         setCursos(processedCursos);
         setStep(2);
       } else {
-        alert("Matrícula não encontrada");
+        alert("MatrÃ­cula nÃ£o encontrada");
       }
     } catch (err) {
       alert("Erro ao acessar o portal. Tente novamente.");
@@ -113,7 +113,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
       setAnswers({});
       setStep(3);
     } catch (err) {
-      alert("Erro ao carregar conteúdo do curso.");
+      alert("Erro ao carregar conteÃºdo do curso.");
     } finally {
       setIsCursoLoading(false);
     }
@@ -137,7 +137,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   React.useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && step === 3) {
-        alert("Você saiu da tela do curso! Por segurança e para garantir o aprendizado, o curso será reiniciado.");
+        alert("VocÃª saiu da tela do curso! Por seguranÃ§a e para garantir o aprendizado, o curso serÃ¡ reiniciado.");
         setStep(2);
         setSelectedCurso(null);
         setContent(null);
@@ -152,7 +152,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
   const submitExam = async () => {
     if (Object.keys(answers).length < content.questoes.length) {
-      alert("Por favor, responda todas as questões antes de finalizar.");
+      alert("Por favor, responda todas as questÃµes antes de finalizar.");
       return;
     }
 
@@ -184,7 +184,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           
           if (isApproved) {
             isBlocked = true;
-            blockReason = "Treinamento Concluído";
+            blockReason = "Treinamento ConcluÃ­do";
           } else if (attemptsExceeded) {
             isBlocked = true;
             blockReason = "Limite de tentativas excedido (3)";
@@ -197,7 +197,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
       setStep(4);
     } catch (err) {
-      alert("Erro ao enviar avaliação. Verifique sua conexão.");
+      alert("Erro ao enviar avaliaÃ§Ã£o. Verifique sua conexÃ£o.");
     } finally {
       setIsExamLoading(false);
     }
@@ -214,14 +214,14 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
               </button>
             )}
             <div>
-              <h1 className="text-lg font-bold tracking-tighter leading-tight">NEXUS PORTAL</h1>
-              <p className="text-[8px] uppercase tracking-widest opacity-60">Ambiente do Colaborador</p>
+              <h1 className="text-lg font-medium tracking-tighter leading-tight">WFS Treinamentos</h1>
+              <p className="text-[8px]  tracking-widest opacity-60">Ambiente do Colaborador</p>
             </div>
           </div>
           {employee && (
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-xs font-bold">{employee.nome}</p>
+                <p className="text-xs font-medium">{employee.nome}</p>
                 <p className="text-[9px] opacity-60">{employee.matricula}</p>
               </div>
               <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-full transition-all" title="Sair">
@@ -234,10 +234,10 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
         <div className="p-8 flex-1 overflow-y-auto">
           {step === 1 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-sm mx-auto space-y-6 bg-white p-8 rounded-2xl shadow-xl mt-20">
-              <h2 className="text-xl font-bold text-center text-slate-800">Acesse seus Treinamentos</h2>
+              <h2 className="text-xl font-medium text-center text-slate-800">Acesse seus Treinamentos</h2>
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>
-                  <label className="text-xs font-bold uppercase text-slate-500">Matrícula</label>
+                  <label className="text-xs font-medium  text-slate-500">MatrÃ­cula</label>
                   <input 
                     className="input-field text-center text-xl font-mono" 
                     value={matricula} 
@@ -247,7 +247,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                     autoFocus
                   />
                 </div>
-                <button type="submit" disabled={isLoginLoading} className="btn-primary w-full py-4 font-bold uppercase tracking-widest disabled:opacity-50">
+                <button type="submit" disabled={isLoginLoading} className="btn-primary w-full py-4 font-medium  tracking-widest disabled:opacity-50">
                   {isLoginLoading ? "Acessando..." : "Entrar no Portal"}
                 </button>
               </form>
@@ -256,7 +256,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
           {step === 2 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto w-full space-y-6">
-              <h2 className="text-lg font-bold uppercase text-slate-700 border-b pb-4 mb-6">Seus Cursos Disponíveis</h2>
+              <h2 className="text-lg font-medium  text-slate-700 border-b pb-4 mb-6">Seus Cursos DisponÃ­veis</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {cursos.map(c => (
                   <div 
@@ -276,31 +276,31 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                           <div className="bg-white/90 px-3 py-1 rounded-full flex items-center gap-2">
                             <Lock className="w-3 h-3 text-red-600" />
-                            <span className="text-[10px] font-bold uppercase text-red-600 tracking-wider">Bloqueado</span>
+                            <span className="text-[10px] font-medium  text-red-600 tracking-wider">Bloqueado</span>
                           </div>
                         </div>
                       )}
                     </div>
                     <div className="p-4 flex-1 flex flex-col">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className={`font-bold ${!c.isBlocked && 'group-hover:text-wfs-accent'} transition-colors`}>{c.nome}</h3>
+                        <h3 className={`font-medium ${!c.isBlocked && 'group-hover:text-wfs-accent'} transition-colors`}>{c.nome}</h3>
                         {c.isApproved && (
-                          <span className="bg-green-100 text-green-700 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">Aprovado</span>
+                          <span className="bg-green-100 text-green-700 text-[8px] font-medium px-1.5 py-0.5 rounded ">Aprovado</span>
                         )}
                       </div>
                       <div className="flex items-center justify-between mt-auto pt-4">
-                        <div className={`flex items-center text-[10px] font-bold uppercase gap-1 ${c.isBlocked ? 'text-slate-400' : 'text-wfs-accent'}`}>
+                        <div className={`flex items-center text-[10px] font-medium  gap-1 ${c.isBlocked ? 'text-slate-400' : 'text-wfs-accent'}`}>
                           {isCursoLoading && selectedCurso?.id === c.id ? (
                             <div className="w-3 h-3 border-2 border-wfs-accent/30 border-t-wfs-accent rounded-full animate-spin mr-1" />
                           ) : null}
                           {c.isBlocked ? c.blockReason : (c.isApproved ? 'Refazer Treinamento' : 'Iniciar Treinamento')} {!c.isBlocked && <ChevronRight className="w-3 h-3" />}
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-slate-500 font-bold uppercase">
-                            Até {c.data_fim ? new Date(c.data_fim).toLocaleDateString() : '-'}
+                          <p className="text-xs text-slate-500 font-medium ">
+                            AtÃ© {c.data_fim ? new Date(c.data_fim).toLocaleDateString() : '-'}
                           </p>
                           {!c.isApproved && (
-                            <p className="text-[9px] text-slate-400 font-bold uppercase">
+                            <p className="text-[9px] text-slate-400 font-medium ">
                               Tentativas: {c.reprovadoCount}/3
                             </p>
                           )}
@@ -316,14 +316,14 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           {step === 3 && content && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto w-full space-y-8">
               <div className="flex items-center gap-2 text-slate-400 mb-4 cursor-pointer hover:text-slate-600" onClick={() => setStep(2)}>
-                <ArrowLeft className="w-4 h-4" /> <span className="text-xs font-bold uppercase">Voltar</span>
+                <ArrowLeft className="w-4 h-4" /> <span className="text-xs font-medium ">Voltar</span>
               </div>
               
               <div className="space-y-6">
                 <div className="flex justify-between items-end">
-                  <h2 className="text-2xl font-bold text-wfs-text">{selectedCurso.nome}</h2>
+                  <h2 className="text-2xl font-medium text-wfs-text">{selectedCurso.nome}</h2>
                   <div className="text-right">
-                    <p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Progresso do Conteúdo</p>
+                    <p className="text-[10px] font-medium  text-slate-400 mb-1">Progresso do ConteÃºdo</p>
                     <div className="flex items-center gap-3">
                       <div className="w-32 h-2 bg-slate-200 rounded-full overflow-hidden">
                         <motion.div 
@@ -332,23 +332,23 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                           className="h-full bg-green-500"
                         />
                       </div>
-                      <span className="text-sm font-bold text-slate-700">{progress.toFixed(0)}%</span>
+                      <span className="text-sm font-medium text-slate-700">{progress.toFixed(0)}%</span>
                     </div>
                   </div>
                 </div>
                 
                 {content.conteudos.length > 0 && (
                   <div className="space-y-4">
-                    <h3 className="text-sm font-bold uppercase text-slate-500 flex items-center gap-2">
-                      <Video className="w-4 h-4" /> Conteúdo em Vídeo
+                    <h3 className="text-sm font-medium  text-slate-500 flex items-center gap-2">
+                      <Video className="w-4 h-4" /> ConteÃºdo em VÃ­deo
                     </h3>
                     {content.conteudos.map((c: any) => (
                       <div key={c.id} className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{c.titulo}</p>
+                          <p className="text-xs font-medium text-slate-500  tracking-wider">{c.titulo}</p>
                           {watchedVideos.has(c.id) && (
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 uppercase">
-                              <CheckCircle className="w-3 h-3" /> Concluído
+                            <span className="flex items-center gap-1 text-[10px] font-medium text-green-600 ">
+                              <CheckCircle className="w-3 h-3" /> ConcluÃ­do
                             </span>
                           )}
                         </div>
@@ -363,7 +363,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                             preload="auto"
                             onEnded={() => markAsWatched(c.id)}
                           >
-                            Seu navegador não suporta a tag de vídeo.
+                            Seu navegador nÃ£o suporta a tag de vÃ­deo.
                           </video>
                         </div>
                       </div>
@@ -374,12 +374,12 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                 {content.avaliacao && (
                   <div className="space-y-6 pt-8 border-t">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold uppercase text-slate-500 flex items-center gap-2">
-                        <ClipboardList className="w-4 h-4" /> Avaliação de Conhecimento
+                      <h3 className="text-sm font-medium  text-slate-500 flex items-center gap-2">
+                        <ClipboardList className="w-4 h-4" /> AvaliaÃ§Ã£o de Conhecimento
                       </h3>
                       {!isExamUnlocked && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-wfs-accent uppercase bg-red-50 px-2 py-1 rounded">
-                          <AlertCircle className="w-3 h-3" /> Assista todos os vídeos para liberar
+                        <span className="flex items-center gap-1 text-[10px] font-medium text-wfs-accent  bg-red-50 px-2 py-1 rounded">
+                          <AlertCircle className="w-3 h-3" /> Assista todos os vÃ­deos para liberar
                         </span>
                       )}
                     </div>
@@ -388,7 +388,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                       <>
                         {content.questoes.map((q: any, i: number) => (
                           <div key={q.id} className="space-y-3">
-                            <p className="font-bold text-slate-800">{i + 1}. {q.enunciado}</p>
+                            <p className="font-medium text-slate-800">{i + 1}. {q.enunciado}</p>
                             <div className="space-y-2">
                               {q.opcoes.map((opt: any) => (
                                 <label key={opt.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
@@ -404,7 +404,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                         <button 
                           onClick={submitExam} 
                           disabled={isExamLoading}
-                          className="btn-primary w-full py-4 font-bold uppercase tracking-widest mt-8 disabled:opacity-50"
+                          className="btn-primary w-full py-4 font-medium  tracking-widest mt-8 disabled:opacity-50"
                         >
                           {isExamLoading ? "Enviando..." : "Finalizar e Enviar Respostas"}
                         </button>
@@ -414,8 +414,8 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                         <div className="w-12 h-12 bg-slate-200 text-slate-400 rounded-full flex items-center justify-center mx-auto">
                           <ClipboardList className="w-6 h-6" />
                         </div>
-                        <h4 className="font-bold text-slate-400 uppercase text-sm">Prova Bloqueada</h4>
-                        <p className="text-xs text-slate-400">Você precisa assistir 100% dos vídeos do curso para liberar a avaliação final.</p>
+                        <h4 className="font-medium text-slate-400  text-sm">Prova Bloqueada</h4>
+                        <p className="text-xs text-slate-400">VocÃª precisa assistir 100% dos vÃ­deos do curso para liberar a avaliaÃ§Ã£o final.</p>
                       </div>
                     )}
                   </div>
@@ -441,8 +441,8 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                       <CheckCircle className="w-8 h-8" />
                     </div>
                     <div className="space-y-2">
-                      <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Treinamento Concluído</h2>
-                      <p className="text-slate-500 text-sm">Você atingiu a pontuação necessária para aprovação.</p>
+                      <h2 className="text-2xl font-medium text-slate-900 tracking-tight ">Treinamento ConcluÃ­do</h2>
+                      <p className="text-slate-500 text-sm">VocÃª atingiu a pontuaÃ§Ã£o necessÃ¡ria para aprovaÃ§Ã£o.</p>
                     </div>
                   </div>
                 ) : (
@@ -451,20 +451,20 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                       <AlertCircle className="w-8 h-8" />
                     </div>
                     <div className="space-y-2">
-                      <h2 className="text-2xl font-bold text-slate-900 tracking-tight uppercase">Desempenho Insuficiente</h2>
-                      <p className="text-slate-500 text-sm">Sua pontuação foi inferior ao mínimo exigido para este módulo.</p>
+                      <h2 className="text-2xl font-medium text-slate-900 tracking-tight ">Desempenho Insuficiente</h2>
+                      <p className="text-slate-500 text-sm">Sua pontuaÃ§Ã£o foi inferior ao mÃ­nimo exigido para este mÃ³dulo.</p>
                     </div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded text-[10px] font-bold text-slate-600 uppercase tracking-widest border border-slate-200">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded text-[10px] font-medium text-slate-600  tracking-widest border border-slate-200">
                       Tentativa {(currentCurso?.reprovadoCount || 0)} de 3
                     </div>
                     {!canRetry && (
-                      <p className="text-xs font-bold text-red-600 uppercase tracking-widest">Limite de tentativas excedido para este curso.</p>
+                      <p className="text-xs font-medium text-red-600  tracking-widest">Limite de tentativas excedido para este curso.</p>
                     )}
                   </div>
                 )}
 
                 <div className="my-10 py-8 border-y border-slate-100 flex flex-col items-center">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em] mb-2">Pontuação Final</span>
+                  <span className="text-[10px] font-medium  text-slate-400 tracking-[0.2em] mb-2">PontuaÃ§Ã£o Final</span>
                   <span className="text-7xl font-mono font-light text-slate-900 tracking-tighter">
                     {result.score.toFixed(0)}<span className="text-2xl text-slate-300 ml-1">%</span>
                   </span>
@@ -474,21 +474,21 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                   {result.status === "Reprovado" && canRetry ? (
                     <button 
                       onClick={() => startCurso(selectedCurso)} 
-                      className="w-full max-w-xs bg-wfs-accent hover:bg-red-700 text-white py-4 rounded font-bold uppercase text-xs tracking-[0.2em] transition-all shadow-lg shadow-red-900/10"
+                      className="w-full max-w-xs bg-wfs-accent hover:bg-red-700 text-white py-4 rounded font-medium  text-xs tracking-[0.2em] transition-all shadow-lg shadow-red-900/10"
                     >
                       Tentar Novamente
                     </button>
                   ) : (
                     <button 
                       onClick={() => setStep(2)} 
-                      className="w-full max-w-xs bg-slate-900 hover:bg-slate-800 text-white py-4 rounded font-bold uppercase text-xs tracking-[0.2em] transition-all"
+                      className="w-full max-w-xs bg-slate-900 hover:bg-slate-800 text-white py-4 rounded font-medium  text-xs tracking-[0.2em] transition-all"
                     >
                       Voltar para meus cursos
                     </button>
                   )}
                   
                   {result.status === "Aprovado" && (
-                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">O certificado será emitido automaticamente pelo RH.</p>
+                    <p className="text-[10px] text-slate-400  font-medium tracking-widest">O certificado serÃ¡ emitido automaticamente pelo RH.</p>
                   )}
                 </div>
               </motion.div>
@@ -499,3 +499,4 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
     </div>
   );
 };
+

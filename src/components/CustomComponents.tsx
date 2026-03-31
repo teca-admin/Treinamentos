@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Calendar as CalendarIcon } from 'lucide-react';
 
 export const CustomSelect = ({ options, value, onChange, placeholder }: { options: { label: string, value: string }[], value: string, onChange: (value: string) => void, placeholder?: string }) => {
@@ -20,7 +20,7 @@ export const CustomSelect = ({ options, value, onChange, placeholder }: { option
   return (
     <div className="relative w-full md:w-auto" ref={ref}>
       <div 
-        className="bg-slate-50 border-2 border-slate-100 focus:border-nexus-primary rounded-none px-9 py-2.5 text-sm cursor-pointer flex items-center justify-between min-w-[180px]"
+        className="bg-slate-50 border-2 border-slate-100 focus:border-WFS Treinamentos-primary rounded-none px-9 py-2.5 text-sm cursor-pointer flex items-center justify-between min-w-[180px]"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="truncate">{selectedLabel}</span>
@@ -62,7 +62,7 @@ export const CustomDatePicker = ({ value, onChange, className, textClassName, st
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "";
-    // Se já estiver no formato DD/MM/YYYY, retorna como está
+    // Se jÃ¡ estiver no formato DD/MM/YYYY, retorna como estÃ¡
     if (dateStr.includes("/") && dateStr.split("/")[0].length <= 2) return dateStr;
     
     // Se estiver no formato YYYY-MM-DD
@@ -100,3 +100,4 @@ export const CustomDatePicker = ({ value, onChange, className, textClassName, st
     </div>
   );
 };
+

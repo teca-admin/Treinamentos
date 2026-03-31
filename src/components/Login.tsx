@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { motion } from "motion/react";
 import { Eye, EyeOff } from "lucide-react";
 import { User } from "../types";
@@ -38,12 +38,12 @@ export const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
         className="bg-wfs-surface p-8 max-w-sm w-full border border-wfs-border shadow-md rounded-sm"
       >
         <div className="text-center mb-8">
-          <h1 className="text-xl font-bold text-wfs-text">Acesso Administrativo</h1>
+          <h1 className="text-xl font-medium text-wfs-text">Acesso Administrativo</h1>
           <p className="text-wfs-muted text-sm mt-1">Insira suas credenciais</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-mono text-wfs-muted mb-1 uppercase tracking-wider">Usuário</label>
+            <label className="block text-xs font-mono text-wfs-muted mb-1  tracking-wider">UsuÃ¡rio</label>
             <input 
               type="text" 
               className="input-field" 
@@ -54,7 +54,7 @@ export const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
             />
           </div>
           <div>
-            <label className="block text-xs font-mono text-wfs-muted mb-1 uppercase tracking-wider">Senha</label>
+            <label className="block text-xs font-mono text-wfs-muted mb-1  tracking-wider">Senha</label>
             <div className="relative">
               <input 
                 type={showPassword ? "text" : "password"} 
@@ -78,10 +78,11 @@ export const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
             Entrar no Sistema
           </button>
         </form>
-        <div className="mt-6 text-center text-[10px] text-wfs-hint uppercase font-mono tracking-widest border-t border-wfs-border pt-4">
+        <div className="mt-6 text-center text-[10px] text-wfs-hint  font-mono tracking-widest border-t border-wfs-border pt-4">
           Plataforma de Treinamentos WFS
         </div>
       </motion.div>
     </div>
   );
 };
+

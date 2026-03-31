@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+﻿import React, { createContext, useContext, useState } from "react";
 import { Contract } from "../types";
 
 const ContractContext = createContext<{
@@ -20,3 +20,4 @@ export const useContract = () => {
   if (!context) throw new Error("useContract must be used within a ContractProvider");
   return context;
 };
+

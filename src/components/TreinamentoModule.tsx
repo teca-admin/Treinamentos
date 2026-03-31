@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Plus, Video, ClipboardList, Trash2, Save, CheckCircle, X, Image as ImageIcon, Link as LinkIcon, Copy, Search, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { User, Contract } from "../types";
@@ -132,7 +132,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
       setStep(1); // Start at step 1 to allow editing basic info, then proceed to step 2
       setShowForm(true);
     } catch (error) {
-      alert("Erro ao carregar conteúdo do curso.");
+      alert("Erro ao carregar conteÃºdo do curso.");
     } finally {
       setIsManageLoading(null);
     }
@@ -140,11 +140,11 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
   const addVideo = async () => {
     if (!videoData.titulo) {
-      alert("Por favor, insira um título para o vídeo.");
+      alert("Por favor, insira um tÃ­tulo para o vÃ­deo.");
       return;
     }
     if (!videoData.url_video) {
-      alert("Por favor, selecione um arquivo de vídeo.");
+      alert("Por favor, selecione um arquivo de vÃ­deo.");
       return;
     }
     
@@ -173,7 +173,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
         if (uploadResult.error) {
           if (uploadResult.error.message.includes("Bucket not found")) {
-            throw new Error("O Bucket 'videos' não existe no Supabase. Por favor, acesse o painel do Supabase > Storage e crie um bucket público chamado 'videos'.");
+            throw new Error("O Bucket 'videos' nÃ£o existe no Supabase. Por favor, acesse o painel do Supabase > Storage e crie um bucket pÃºblico chamado 'videos'.");
           }
           throw new Error(`Erro no upload para o Storage: ${uploadResult.error.message}`);
         }
@@ -203,14 +203,14 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
         throw new Error(data.message || "Erro ao salvar no banco de dados");
       }
     } catch (error: any) {
-      alert(`Erro ao processar vídeo: ${error.message}`);
+      alert(`Erro ao processar vÃ­deo: ${error.message}`);
     } finally {
       setIsVideoLoading(false);
     }
   };
 
   const deleteVideo = async (id: number) => {
-    if (!confirm("Deseja remover este vídeo?")) return;
+    if (!confirm("Deseja remover este vÃ­deo?")) return;
     const previous = [...conteudos];
     setConteudos(conteudos.filter(c => c.id !== id));
     const res = await fetch(`/api/cursos/conteudo/${id}?contrato=${currentContract}`, { method: "DELETE" });
@@ -236,7 +236,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
   const saveAvaliacao = async () => {
     if (questoes.length === 0) {
-      alert("Adicione pelo menos uma questão à prova.");
+      alert("Adicione pelo menos uma questÃ£o Ã  prova.");
       return;
     }
     const res = await fetch("/api/cursos/avaliacao?contrato=" + currentContract, {
@@ -276,7 +276,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
   const copyLink = () => {
     navigator.clipboard.writeText(portalLink);
-    alert("Link copiado para a área de transferência!");
+    alert("Link copiado para a Ã¡rea de transferÃªncia!");
   };
 
   return (
@@ -286,7 +286,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
           <button 
             key={t} 
             onClick={() => setTab(t)}
-            className={`pb-2 px-4 text-xs font-bold uppercase tracking-wider transition-colors ${
+            className={`pb-2 px-4 text-xs font-medium  tracking-wider transition-colors ${
               tab === t ? 'border-b-2 border-wfs-accent text-wfs-accent' : 'text-slate-400 hover:text-slate-600'
             }`}
           >
@@ -299,9 +299,9 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
         <div>
       <div className="bg-white p-4 border-2 border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-black text-slate-800 tracking-tighter uppercase flex items-center gap-2">
+          <h2 className="text-xl font-medium text-slate-800 tracking-tighter  flex items-center gap-2">
             <Video className="w-5 h-5 text-wfs-accent" />
-            Catálogo de Cursos
+            CatÃ¡logo de Cursos
           </h2>
         </div>
 
@@ -314,7 +314,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
             </button>
           </div>
           {(user.role === "Admin" || user.role === "Treinamento") && (
-            <button onClick={() => { closeModal(); setShowForm(true); }} className="bg-wfs-accent text-white font-bold uppercase text-xs tracking-widest px-6 py-3 rounded-none hover:bg-wfs-accent/90 transition-all shadow-lg flex items-center gap-2">
+            <button onClick={() => { closeModal(); setShowForm(true); }} className="bg-wfs-accent text-white font-medium  text-xs tracking-widest px-6 py-3 rounded-none hover:bg-wfs-accent/90 transition-all shadow-lg flex items-center gap-2">
               <Plus className="w-4 h-4" /> Criar Curso
             </button>
           )}
@@ -334,19 +334,19 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
               )}
             </div>
             <div className="p-4 flex-1">
-              <h4 className="font-bold text-slate-800 mb-1">{c.nome}</h4>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                Disponível: {c.data_inicio ? new Date(c.data_inicio).toLocaleDateString() : '-'} até {c.data_fim ? new Date(c.data_fim).toLocaleDateString() : '-'}
+              <h4 className="font-medium text-slate-800 mb-1">{c.nome}</h4>
+              <p className="text-[10px] text-slate-400 font-medium  tracking-widest">
+                DisponÃ­vel: {c.data_inicio ? new Date(c.data_inicio).toLocaleDateString() : '-'} atÃ© {c.data_fim ? new Date(c.data_fim).toLocaleDateString() : '-'}
               </p>
             </div>
             <div className="px-4 py-3 border-t-2 border-slate-200 bg-slate-50 flex justify-end">
               <button 
                 onClick={() => manageContent(c)}
                 disabled={isManageLoading === c.id}
-                className="text-wfs-accent text-[10px] font-bold uppercase hover:underline flex items-center gap-1 disabled:opacity-50"
+                className="text-wfs-accent text-[10px] font-medium  hover:underline flex items-center gap-1 disabled:opacity-50"
               >
                 {isManageLoading === c.id && <div className="w-3 h-3 border-2 border-wfs-accent/30 border-t-wfs-accent rounded-full animate-spin" />}
-                {isManageLoading === c.id ? "Carregando..." : "Gerenciar Conteúdo"}
+                {isManageLoading === c.id ? "Carregando..." : "Gerenciar ConteÃºdo"}
               </button>
             </div>
           </div>
@@ -365,15 +365,15 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
         return (
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-              <h3 className="text-lg font-bold text-wfs-text uppercase">Resultados das Avaliações</h3>
+              <h3 className="text-lg font-medium text-wfs-text ">Resultados das AvaliaÃ§Ãµes</h3>
               
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                   <input 
                     type="text" 
-                    placeholder="FILTRAR MATRÍCULA..." 
-                    className="w-48 bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-wfs-accent/20 focus:border-wfs-accent transition-all"
+                    placeholder="FILTRAR MATRÃCULA..." 
+                    className="w-48 bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-[10px] font-medium  tracking-widest focus:outline-none focus:ring-2 focus:ring-wfs-accent/20 focus:border-wfs-accent transition-all"
                     value={filterMatricula}
                     onChange={e => setFilterMatricula(e.target.value)}
                   />
@@ -382,7 +382,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                 <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
                   <Filter className="w-3.5 h-3.5 text-slate-400" />
                   <select 
-                    className="bg-transparent text-[10px] font-bold uppercase text-slate-600 outline-none cursor-pointer border-none p-0"
+                    className="bg-transparent text-[10px] font-medium  text-slate-600 outline-none cursor-pointer border-none p-0"
                     value={filterStatus}
                     onChange={e => setFilterStatus(e.target.value)}
                   >
@@ -394,7 +394,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
                 <button 
                   onClick={loadResultados} 
-                  className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
+                  className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-[10px] font-medium  tracking-widest transition-all"
                 >
                   Total ({filteredResultados.length})
                 </button>
@@ -406,12 +406,12 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                 <table className="w-full text-left table-fixed">
                   <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-200">
-                      <th className="w-64 p-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Colaborador</th>
-                      <th className="w-40 p-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Curso</th>
-                      <th className="w-24 p-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-center">Tentativa</th>
-                      <th className="w-28 p-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-center">Data</th>
-                      <th className="w-20 p-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-center">Nota</th>
-                      <th className="w-24 p-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-center">Status</th>
+                      <th className="w-64 p-4 text-[10px] font-medium  text-slate-500 tracking-wider">Colaborador</th>
+                      <th className="w-40 p-4 text-[10px] font-medium  text-slate-500 tracking-wider">Curso</th>
+                      <th className="w-24 p-4 text-[10px] font-medium  text-slate-500 tracking-wider text-center">Tentativa</th>
+                      <th className="w-28 p-4 text-[10px] font-medium  text-slate-500 tracking-wider text-center">Data</th>
+                      <th className="w-20 p-4 text-[10px] font-medium  text-slate-500 tracking-wider text-center">Nota</th>
+                      <th className="w-24 p-4 text-[10px] font-medium  text-slate-500 tracking-wider text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -423,21 +423,21 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                       filteredResultados.map(r => (
                         <tr key={r.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="p-4 truncate">
-                            <p className="text-sm font-bold text-slate-800 truncate">{r.funcionario_nome}</p>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-wider">Matrícula: {r.matricula}</p>
+                            <p className="text-sm font-medium text-slate-800 truncate">{r.funcionario_nome}</p>
+                            <p className="text-[10px] text-slate-400  tracking-wider">MatrÃ­cula: {r.matricula}</p>
                           </td>
                           <td className="p-4 text-sm text-slate-600 truncate">{r.curso_nome}</td>
                           <td className="p-4 text-center">
-                            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 border border-slate-200 uppercase tracking-tighter">
-                              {r.tentativa}ª Tentativa
+                            <span className="bg-slate-100 text-slate-600 text-[10px] font-medium px-2 py-1 border border-slate-200  tracking-tighter">
+                              {r.tentativa}Âª Tentativa
                             </span>
                           </td>
                           <td className="p-4 text-center text-sm text-slate-600">{new Date(r.data_conclusao).toLocaleDateString()}</td>
                           <td className="p-4 text-center">
-                            <span className="text-sm font-mono font-bold text-slate-800">{Number(r.nota).toFixed(0)}%</span>
+                            <span className="text-sm font-mono font-medium text-slate-800">{Number(r.nota).toFixed(0)}%</span>
                           </td>
                           <td className="p-4 text-center">
-                            <span className={`px-2 py-1 text-[10px] font-bold uppercase border ${
+                            <span className={`px-2 py-1 text-[10px] font-medium  border ${
                               r.status === 'Aprovado' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'
                             }`}>
                               {r.status}
@@ -462,8 +462,8 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
             className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden"
           >
             <div className="bg-wfs-text p-4 text-white flex justify-between items-center">
-              <h3 className="text-lg font-bold uppercase tracking-tight">
-                {step === 1 ? (createdCursoId ? "Editar Curso" : "Novo Curso") : "Gerenciar Conteúdo do Curso"}
+              <h3 className="text-lg font-medium  tracking-tight">
+                {step === 1 ? (createdCursoId ? "Editar Curso" : "Novo Curso") : "Gerenciar ConteÃºdo do Curso"}
               </h3>
               <button onClick={closeModal} className="hover:bg-white/10 p-1 rounded transition-colors">
                 <X className="w-5 h-5" />
@@ -477,11 +477,11 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                     <CheckCircle className="w-10 h-10" />
                   </div>
                   <div>
-                    <h4 className="text-xl font-bold text-slate-800">Curso Publicado!</h4>
-                    <p className="text-sm text-slate-500">O treinamento já está disponível no portal do colaborador.</p>
+                    <h4 className="text-xl font-medium text-slate-800">Curso Publicado!</h4>
+                    <p className="text-sm text-slate-500">O treinamento jÃ¡ estÃ¡ disponÃ­vel no portal do colaborador.</p>
                   </div>
                   <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
-                    <p className="text-xs font-bold uppercase text-slate-400">Link para Compartilhamento</p>
+                    <p className="text-xs font-medium  text-slate-400">Link para Compartilhamento</p>
                     <div className="flex gap-2">
                       <input 
                         readOnly 
@@ -493,22 +493,22 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                       </button>
                     </div>
                   </div>
-                  <button onClick={closeModal} className="btn-primary w-full py-3 font-bold uppercase tracking-widest">
-                    Voltar ao Catálogo
+                  <button onClick={closeModal} className="btn-primary w-full py-3 font-medium  tracking-widest">
+                    Voltar ao CatÃ¡logo
                   </button>
                 </div>
               ) : step === 1 ? (
                 <form onSubmit={handleCreateCurso} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-1">
-                      <label className="text-xs font-bold uppercase text-slate-500 mb-1 block">Capa do Treinamento</label>
+                      <label className="text-xs font-medium  text-slate-500 mb-1 block">Capa do Treinamento</label>
                       <div className="aspect-square bg-slate-100 rounded-lg border-2 border-dashed border-slate-200 flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer">
                         {formData.capa_url ? (
                           <img src={formData.capa_url} className="w-full h-full object-cover" />
                         ) : (
                           <>
                             <ImageIcon className="w-8 h-8 text-slate-300 mb-2" />
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">Upload Foto</span>
+                            <span className="text-[10px] font-medium text-slate-400 ">Upload Foto</span>
                             <span className="text-[8px] text-slate-400 mt-1">Recomendado: 800x450px</span>
                           </>
                         )}
@@ -522,10 +522,10 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                     </div>
                     <div className="md:col-span-2 space-y-6">
                       <div>
-                        <label className="text-xs font-bold uppercase text-slate-500 mb-1 block">Nome do Curso</label>
+                        <label className="text-xs font-medium  text-slate-500 mb-1 block">Nome do Curso</label>
                         <input 
                           className="input-field" 
-                          placeholder="Ex: Integração de Novos Colaboradores"
+                          placeholder="Ex: IntegraÃ§Ã£o de Novos Colaboradores"
                           value={formData.nome} 
                           onChange={e => setFormData({...formData, nome: e.target.value})} 
                           required 
@@ -534,7 +534,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                         <div>
-                          <label className="text-xs font-bold uppercase text-slate-500 mb-1 block">Data de Início</label>
+                          <label className="text-xs font-medium  text-slate-500 mb-1 block">Data de InÃ­cio</label>
                           <input 
                             type="date" 
                             className="input-field" 
@@ -544,7 +544,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                           />
                         </div>
                         <div>
-                          <label className="text-xs font-bold uppercase text-slate-500 mb-1 block">Data de Fim</label>
+                          <label className="text-xs font-medium  text-slate-500 mb-1 block">Data de Fim</label>
                           <input 
                             type="date" 
                             className="input-field" 
@@ -558,7 +558,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4 border-t">
-                    <button type="button" onClick={closeModal} className="px-4 py-2 text-slate-500 font-bold uppercase text-xs hover:text-slate-700 transition-colors">Cancelar</button>
+                    <button type="button" onClick={closeModal} className="px-4 py-2 text-slate-500 font-medium  text-xs hover:text-slate-700 transition-colors">Cancelar</button>
                     <button type="submit" className="btn-primary flex items-center gap-2">
                       {createdCursoId ? "Salvar e Continuar" : "Criar e Continuar"} <Plus className="w-4 h-4" />
                     </button>
@@ -568,14 +568,14 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                 <div className="space-y-8">
                   {/* Videos Section */}
                   <section className="space-y-4">
-                    <h4 className="text-sm font-bold uppercase text-slate-800 flex items-center gap-2 border-b pb-2">
-                      <Video className="w-4 h-4 text-wfs-accent" /> Materiais de Estudo (Vídeos)
+                    <h4 className="text-sm font-medium  text-slate-800 flex items-center gap-2 border-b pb-2">
+                      <Video className="w-4 h-4 text-wfs-accent" /> Materiais de Estudo (VÃ­deos)
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Título do Vídeo</label>
+                        <label className="text-[10px] font-medium  text-slate-400 block mb-1">TÃ­tulo do VÃ­deo</label>
                         <input 
-                          placeholder="Ex: Introdução ao Sistema" 
+                          placeholder="Ex: IntroduÃ§Ã£o ao Sistema" 
                           className="input-field text-sm" 
                           value={videoData.titulo} 
                           onChange={e => setVideoData({...videoData, titulo: e.target.value})} 
@@ -583,11 +583,11 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                       </div>
                       <div className="flex gap-2 items-end">
                         <div className="flex-1 relative">
-                          <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Arquivo de Vídeo (Máx 20MB)</label>
+                          <label className="text-[10px] font-medium  text-slate-400 block mb-1">Arquivo de VÃ­deo (MÃ¡x 20MB)</label>
                           <div className="relative h-10 border rounded-lg bg-white flex items-center px-3 cursor-pointer hover:border-wfs-accent transition-all">
                             <Video className="w-4 h-4 text-slate-400 mr-2" />
                             <span className="text-xs text-slate-500 truncate">
-                              {videoData.url_video ? "Vídeo Selecionado" : "Selecionar MP4..."}
+                              {videoData.url_video ? "VÃ­deo Selecionado" : "Selecionar MP4..."}
                             </span>
                             <input 
                               type="file" 
@@ -597,7 +597,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                                 const file = e.target.files?.[0];
                                 if (file) {
                                   if (file.size > 20 * 1024 * 1024) {
-                                    alert("Arquivo muito grande! Máximo 20MB.");
+                                    alert("Arquivo muito grande! MÃ¡ximo 20MB.");
                                     return;
                                   }
                                   
@@ -629,7 +629,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                           ) : (
                             <Plus className="w-5 h-5" />
                           )}
-                          <span className="text-xs font-bold uppercase">
+                          <span className="text-xs font-medium ">
                             {isVideoLoading ? "Processando..." : "Adicionar"}
                           </span>
                         </button>
@@ -639,7 +639,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                       {conteudos.map((v, i) => (
                         <div key={v.id} className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-200">
                           <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-bold text-slate-400 bg-white w-5 h-5 flex items-center justify-center rounded-full border">{i + 1}</span>
+                            <span className="text-[10px] font-medium text-slate-400 bg-white w-5 h-5 flex items-center justify-center rounded-full border">{i + 1}</span>
                             <span className="text-sm font-medium text-slate-700">{v.titulo}</span>
                           </div>
                           <button 
@@ -655,12 +655,12 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
                   {/* Evaluation Section */}
                   <section className="space-y-4">
-                    <h4 className="text-sm font-bold uppercase text-slate-800 flex items-center gap-2 border-b pb-2">
-                      <ClipboardList className="w-4 h-4 text-wfs-accent" /> Avaliação Final
+                    <h4 className="text-sm font-medium  text-slate-800 flex items-center gap-2 border-b pb-2">
+                      <ClipboardList className="w-4 h-4 text-wfs-accent" /> AvaliaÃ§Ã£o Final
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Nota Mínima (%)</label>
+                        <label className="text-[10px] font-medium  text-slate-400 block mb-1">Nota MÃ­nima (%)</label>
                         <input 
                           type="number" 
                           className="input-field text-sm" 
@@ -669,7 +669,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Tentativas Máximas</label>
+                        <label className="text-[10px] font-medium  text-slate-400 block mb-1">Tentativas MÃ¡ximas</label>
                         <input 
                           type="number" 
                           className="input-field text-sm" 
@@ -680,9 +680,9 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                     </div>
 
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
-                      <h5 className="text-xs font-bold uppercase text-slate-500">Nova Questão</h5>
+                      <h5 className="text-xs font-medium  text-slate-500">Nova QuestÃ£o</h5>
                       <input 
-                        placeholder="Enunciado da Questão" 
+                        placeholder="Enunciado da QuestÃ£o" 
                         className="input-field text-sm" 
                         value={novaQuestao.enunciado} 
                         onChange={e => setNovaQuestao({...novaQuestao, enunciado: e.target.value})} 
@@ -700,7 +700,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                               }}
                             />
                             <input 
-                              placeholder={`Opção ${idx + 1}`} 
+                              placeholder={`OpÃ§Ã£o ${idx + 1}`} 
                               className="input-field text-xs py-1.5" 
                               value={opt.texto} 
                               onChange={e => {
@@ -712,8 +712,8 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                           </div>
                         ))}
                       </div>
-                      <button onClick={addQuestao} className="w-full py-2 border-2 border-dashed border-slate-300 text-slate-400 hover:border-wfs-accent hover:text-wfs-accent rounded-lg text-xs font-bold uppercase transition-all">
-                        Adicionar Questão à Prova
+                      <button onClick={addQuestao} className="w-full py-2 border-2 border-dashed border-slate-300 text-slate-400 hover:border-wfs-accent hover:text-wfs-accent rounded-lg text-xs font-medium  transition-all">
+                        Adicionar QuestÃ£o Ã  Prova
                       </button>
                     </div>
 
@@ -736,7 +736,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                   </section>
 
                   <div className="flex justify-end gap-3 pt-6 border-t">
-                    <button onClick={() => setStep(1)} className="px-4 py-2 text-slate-500 font-bold uppercase text-xs hover:text-slate-700 transition-colors">Voltar</button>
+                    <button onClick={() => setStep(1)} className="px-4 py-2 text-slate-500 font-medium  text-xs hover:text-slate-700 transition-colors">Voltar</button>
                     <button onClick={saveAvaliacao} className="btn-primary flex items-center gap-2 px-8">
                       Finalizar e Publicar <Save className="w-4 h-4" />
                     </button>
@@ -750,3 +750,4 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
     </div>
   );
 };
+
