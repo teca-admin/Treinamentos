@@ -248,9 +248,9 @@ app.get("/api/treinamentos/resultados", async (req, res) => {
     const courseAttempts = results.filter((r2: any) => r2.funcionario_id === r.funcionario_id && r2.curso_id === r.curso_id && r2.id <= r.id);
     return {
       id: r.id,
-      funcionario_nome: r.funcionarios.nome,
-      matricula: r.funcionarios.matricula,
-      curso_nome: r.cursos.nome,
+      funcionario_nome: r.funcionarios?.nome || 'Deletado',
+      matricula: String(r.funcionarios?.matricula || ''),
+      curso_nome: r.cursos?.nome || 'Deletado',
       nota: r.nota,
       status: r.status,
       data_conclusao: r.data_conclusao,

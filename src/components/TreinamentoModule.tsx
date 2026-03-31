@@ -358,7 +358,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
       {tab === "resultados" && (() => {
         const filteredResultados = resultados.filter(r => {
-          const matchMatricula = r.matricula.toLowerCase().includes(filterMatricula.toLowerCase());
+          const matchMatricula = String(r.matricula || "").toLowerCase().includes(filterMatricula.toLowerCase());
           const matchStatus = filterStatus === "Todos" || r.status === filterStatus;
           return matchMatricula && matchStatus;
         });
