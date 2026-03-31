@@ -163,12 +163,13 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         
         // Upload to storage
-        // We try 'videos' bucket first, then 'treinamentos'
-        let uploadResult = await supabaseClient.storage.from('videos').upload(fileName, blob);
+        let bucketName = 'videos';
+        let uploadResult = await supabaseClient.storage.from(bucketName).upload(fileName, blob);
         
         if (uploadResult.error) {
            console.log("Erro ao subir no bucket 'videos', tentando 'treinamentos'...");
-           uploadResult = await supabaseClient.storage.from('treinamentos').upload(fileName, blob);
+           bucketName = 'treinamentos';
+           uploadResult = await supabaseClient.storage.from(bucketName).upload(fileName, blob);
         }
 
         if (uploadResult.error) {
@@ -178,8 +179,8 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
           throw new Error(`Erro no upload para o Storage: ${uploadResult.error.message}`);
         }
         
-        // Get public URL
-        const { data: { publicUrl } } = supabaseClient.storage.from(uploadResult.data.path.split('/')[0] || 'videos').getPublicUrl(uploadResult.data.path);
+        // Get public URL using the confirmed bucket name
+        const { data: { publicUrl } } = supabaseClient.storage.from(bucketName).getPublicUrl(uploadResult.data.path);
         finalUrl = publicUrl;
       }
 

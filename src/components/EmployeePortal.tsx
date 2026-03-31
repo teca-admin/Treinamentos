@@ -353,7 +353,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                           )}
                         </div>
                         <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
-                          <video crossOrigin="anonymous" 
+                          <video 
                             key={c.id}
                             src={c.url_video} 
                             controls 
