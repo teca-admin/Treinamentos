@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { ChevronRight, Video, ClipboardList, ArrowLeft, CheckCircle, AlertCircle, Lock, LogOut, Search, Filter } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -68,9 +68,9 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           
           let isBlocked = !isStarted || !isNotEnded || attemptsExceeded || isApproved;
           let blockReason = "";
-          if (!isStarted) blockReason = "Ainda nÃ£o disponÃ­vel";
-          else if (!isNotEnded) blockReason = "PerÃ­odo encerrado";
-          else if (isApproved) blockReason = "Treinamento ConcluÃ­do";
+          if (!isStarted) blockReason = "Ainda não disponível";
+          else if (!isNotEnded) blockReason = "Período encerrado";
+          else if (isApproved) blockReason = "Treinamento Concluído";
           else if (attemptsExceeded) blockReason = "Limite de tentativas excedido (3)";
           
           return {
@@ -85,7 +85,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
         setCursos(processedCursos);
         setStep(2);
       } else {
-        alert("MatrÃ­cula nÃ£o encontrada");
+        alert("Matrícula não encontrada");
       }
     } catch (err) {
       alert("Erro ao acessar o portal. Tente novamente.");
@@ -113,7 +113,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
       setAnswers({});
       setStep(3);
     } catch (err) {
-      alert("Erro ao carregar conteÃºdo do curso.");
+      alert("Erro ao carregar conteúdo do curso.");
     } finally {
       setIsCursoLoading(false);
     }
@@ -137,7 +137,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   React.useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && step === 3) {
-        alert("VocÃª saiu da tela do curso! Por seguranÃ§a e para garantir o aprendizado, o curso serÃ¡ reiniciado.");
+        alert("Você saiu da tela do curso! Por segurança e para garantir o aprendizado, o curso será reiniciado.");
         setStep(2);
         setSelectedCurso(null);
         setContent(null);
@@ -152,7 +152,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
   const submitExam = async () => {
     if (Object.keys(answers).length < content.questoes.length) {
-      alert("Por favor, responda todas as questÃµes antes de finalizar.");
+      alert("Por favor, responda todas as questões antes de finalizar.");
       return;
     }
 
@@ -184,7 +184,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           
           if (isApproved) {
             isBlocked = true;
-            blockReason = "Treinamento ConcluÃ­do";
+            blockReason = "Treinamento Concluído";
           } else if (attemptsExceeded) {
             isBlocked = true;
             blockReason = "Limite de tentativas excedido (3)";
@@ -197,7 +197,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
       setStep(4);
     } catch (err) {
-      alert("Erro ao enviar avaliaÃ§Ã£o. Verifique sua conexÃ£o.");
+      alert("Erro ao enviar avaliação. Verifique sua conexão.");
     } finally {
       setIsExamLoading(false);
     }
@@ -237,7 +237,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
               <h2 className="text-xl font-medium text-center text-slate-800">Acesse seus Treinamentos</h2>
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>
-                  <label className="text-xs font-medium  text-slate-500">MatrÃ­cula</label>
+                  <label className="text-xs font-medium  text-slate-500">Matrícula</label>
                   <input 
                     className="input-field text-center text-xl font-mono" 
                     value={matricula} 
@@ -256,7 +256,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
           {step === 2 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto w-full space-y-6">
-              <h2 className="text-lg font-medium  text-slate-700 border-b pb-4 mb-6">Seus Cursos DisponÃ­veis</h2>
+              <h2 className="text-lg font-medium  text-slate-700 border-b pb-4 mb-6">Seus Cursos Disponíveis</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {cursos.map(c => (
                   <div 
@@ -297,7 +297,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-slate-500 font-medium ">
-                            AtÃ© {c.data_fim ? new Date(c.data_fim).toLocaleDateString() : '-'}
+                            Até {c.data_fim ? new Date(c.data_fim).toLocaleDateString() : '-'}
                           </p>
                           {!c.isApproved && (
                             <p className="text-[9px] text-slate-400 font-medium ">
@@ -323,7 +323,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                 <div className="flex justify-between items-end">
                   <h2 className="text-2xl font-medium text-wfs-text">{selectedCurso.nome}</h2>
                   <div className="text-right">
-                    <p className="text-[10px] font-medium  text-slate-400 mb-1">Progresso do ConteÃºdo</p>
+                    <p className="text-[10px] font-medium  text-slate-400 mb-1">Progresso do Conteúdo</p>
                     <div className="flex items-center gap-3">
                       <div className="w-32 h-2 bg-slate-200 rounded-full overflow-hidden">
                         <motion.div 
@@ -340,7 +340,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                 {content.conteudos.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="text-sm font-medium  text-slate-500 flex items-center gap-2">
-                      <Video className="w-4 h-4" /> ConteÃºdo em VÃ­deo
+                      <Video className="w-4 h-4" /> Conteúdo em Vídeo
                     </h3>
                     {content.conteudos.map((c: any) => (
                       <div key={c.id} className="space-y-3">
@@ -348,12 +348,12 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                           <p className="text-xs font-medium text-slate-500  tracking-wider">{c.titulo}</p>
                           {watchedVideos.has(c.id) && (
                             <span className="flex items-center gap-1 text-[10px] font-medium text-green-600 ">
-                              <CheckCircle className="w-3 h-3" /> ConcluÃ­do
+                              <CheckCircle className="w-3 h-3" /> Concluído
                             </span>
                           )}
                         </div>
                         <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
-                          <video 
+                          <video crossOrigin="anonymous" 
                             key={c.id}
                             src={c.url_video} 
                             controls 
@@ -363,7 +363,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                             preload="auto"
                             onEnded={() => markAsWatched(c.id)}
                           >
-                            Seu navegador nÃ£o suporta a tag de vÃ­deo.
+                            Seu navegador não suporta a tag de vídeo.
                           </video>
                         </div>
                       </div>
@@ -375,11 +375,11 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                   <div className="space-y-6 pt-8 border-t">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-medium  text-slate-500 flex items-center gap-2">
-                        <ClipboardList className="w-4 h-4" /> AvaliaÃ§Ã£o de Conhecimento
+                        <ClipboardList className="w-4 h-4" /> Avaliação de Conhecimento
                       </h3>
                       {!isExamUnlocked && (
                         <span className="flex items-center gap-1 text-[10px] font-medium text-wfs-accent  bg-red-50 px-2 py-1 rounded">
-                          <AlertCircle className="w-3 h-3" /> Assista todos os vÃ­deos para liberar
+                          <AlertCircle className="w-3 h-3" /> Assista todos os vídeos para liberar
                         </span>
                       )}
                     </div>
@@ -415,7 +415,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                           <ClipboardList className="w-6 h-6" />
                         </div>
                         <h4 className="font-medium text-slate-400  text-sm">Prova Bloqueada</h4>
-                        <p className="text-xs text-slate-400">VocÃª precisa assistir 100% dos vÃ­deos do curso para liberar a avaliaÃ§Ã£o final.</p>
+                        <p className="text-xs text-slate-400">Você precisa assistir 100% dos vídeos do curso para liberar a avaliação final.</p>
                       </div>
                     )}
                   </div>
@@ -441,8 +441,8 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                       <CheckCircle className="w-8 h-8" />
                     </div>
                     <div className="space-y-2">
-                      <h2 className="text-2xl font-medium text-slate-900 tracking-tight ">Treinamento ConcluÃ­do</h2>
-                      <p className="text-slate-500 text-sm">VocÃª atingiu a pontuaÃ§Ã£o necessÃ¡ria para aprovaÃ§Ã£o.</p>
+                      <h2 className="text-2xl font-medium text-slate-900 tracking-tight ">Treinamento Concluído</h2>
+                      <p className="text-slate-500 text-sm">Você atingiu a pontuação necessária para aprovação.</p>
                     </div>
                   </div>
                 ) : (
@@ -452,7 +452,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                     </div>
                     <div className="space-y-2">
                       <h2 className="text-2xl font-medium text-slate-900 tracking-tight ">Desempenho Insuficiente</h2>
-                      <p className="text-slate-500 text-sm">Sua pontuaÃ§Ã£o foi inferior ao mÃ­nimo exigido para este mÃ³dulo.</p>
+                      <p className="text-slate-500 text-sm">Sua pontuação foi inferior ao mínimo exigido para este módulo.</p>
                     </div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded text-[10px] font-medium text-slate-600  tracking-widest border border-slate-200">
                       Tentativa {(currentCurso?.reprovadoCount || 0)} de 3
@@ -464,7 +464,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                 )}
 
                 <div className="my-10 py-8 border-y border-slate-100 flex flex-col items-center">
-                  <span className="text-[10px] font-medium  text-slate-400 tracking-[0.2em] mb-2">PontuaÃ§Ã£o Final</span>
+                  <span className="text-[10px] font-medium  text-slate-400 tracking-[0.2em] mb-2">Pontuação Final</span>
                   <span className="text-7xl font-mono font-light text-slate-900 tracking-tighter">
                     {result.score.toFixed(0)}<span className="text-2xl text-slate-300 ml-1">%</span>
                   </span>
@@ -488,7 +488,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                   )}
                   
                   {result.status === "Aprovado" && (
-                    <p className="text-[10px] text-slate-400  font-medium tracking-widest">O certificado serÃ¡ emitido automaticamente pelo RH.</p>
+                    <p className="text-[10px] text-slate-400  font-medium tracking-widest">O certificado será emitido automaticamente pelo RH.</p>
                   )}
                 </div>
               </motion.div>
@@ -499,4 +499,3 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
     </div>
   );
 };
-

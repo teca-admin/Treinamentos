@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, Video, ClipboardList, Trash2, Save, CheckCircle, X, Image as ImageIcon, Link as LinkIcon, Copy, Search, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { User, Contract } from "../types";
@@ -132,7 +132,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
       setStep(1); // Start at step 1 to allow editing basic info, then proceed to step 2
       setShowForm(true);
     } catch (error) {
-      alert("Erro ao carregar conteÃºdo do curso.");
+      alert("Erro ao carregar conteúdo do curso.");
     } finally {
       setIsManageLoading(null);
     }
@@ -140,11 +140,11 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
   const addVideo = async () => {
     if (!videoData.titulo) {
-      alert("Por favor, insira um tÃ­tulo para o vÃ­deo.");
+      alert("Por favor, insira um título para o vídeo.");
       return;
     }
     if (!videoData.url_video) {
-      alert("Por favor, selecione um arquivo de vÃ­deo.");
+      alert("Por favor, selecione um arquivo de vídeo.");
       return;
     }
     
@@ -173,7 +173,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
         if (uploadResult.error) {
           if (uploadResult.error.message.includes("Bucket not found")) {
-            throw new Error("O Bucket 'videos' nÃ£o existe no Supabase. Por favor, acesse o painel do Supabase > Storage e crie um bucket pÃºblico chamado 'videos'.");
+            throw new Error("O Bucket 'videos' não existe no Supabase. Por favor, acesse o painel do Supabase > Storage e crie um bucket público chamado 'videos'.");
           }
           throw new Error(`Erro no upload para o Storage: ${uploadResult.error.message}`);
         }
@@ -203,14 +203,14 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
         throw new Error(data.message || "Erro ao salvar no banco de dados");
       }
     } catch (error: any) {
-      alert(`Erro ao processar vÃ­deo: ${error.message}`);
+      alert(`Erro ao processar vídeo: ${error.message}`);
     } finally {
       setIsVideoLoading(false);
     }
   };
 
   const deleteVideo = async (id: number) => {
-    if (!confirm("Deseja remover este vÃ­deo?")) return;
+    if (!confirm("Deseja remover este vídeo?")) return;
     const previous = [...conteudos];
     setConteudos(conteudos.filter(c => c.id !== id));
     const res = await fetch(`/api/cursos/conteudo/${id}?contrato=${currentContract}`, { method: "DELETE" });
@@ -236,7 +236,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
   const saveAvaliacao = async () => {
     if (questoes.length === 0) {
-      alert("Adicione pelo menos uma questÃ£o Ã  prova.");
+      alert("Adicione pelo menos uma questão à prova.");
       return;
     }
     const res = await fetch("/api/cursos/avaliacao?contrato=" + currentContract, {
@@ -276,7 +276,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
 
   const copyLink = () => {
     navigator.clipboard.writeText(portalLink);
-    alert("Link copiado para a Ã¡rea de transferÃªncia!");
+    alert("Link copiado para a área de transferência!");
   };
 
   return (
@@ -301,7 +301,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
         <div>
           <h2 className="text-xl font-medium text-slate-800 tracking-tighter  flex items-center gap-2">
             <Video className="w-5 h-5 text-wfs-accent" />
-            CatÃ¡logo de Cursos
+            Catálogo de Cursos
           </h2>
         </div>
 
@@ -336,7 +336,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
             <div className="p-4 flex-1">
               <h4 className="font-medium text-slate-800 mb-1">{c.nome}</h4>
               <p className="text-[10px] text-slate-400 font-medium  tracking-widest">
-                DisponÃ­vel: {c.data_inicio ? new Date(c.data_inicio).toLocaleDateString() : '-'} atÃ© {c.data_fim ? new Date(c.data_fim).toLocaleDateString() : '-'}
+                Disponível: {c.data_inicio ? new Date(c.data_inicio).toLocaleDateString() : '-'} até {c.data_fim ? new Date(c.data_fim).toLocaleDateString() : '-'}
               </p>
             </div>
             <div className="px-4 py-3 border-t-2 border-slate-200 bg-slate-50 flex justify-end">
@@ -346,7 +346,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                 className="text-wfs-accent text-[10px] font-medium  hover:underline flex items-center gap-1 disabled:opacity-50"
               >
                 {isManageLoading === c.id && <div className="w-3 h-3 border-2 border-wfs-accent/30 border-t-wfs-accent rounded-full animate-spin" />}
-                {isManageLoading === c.id ? "Carregando..." : "Gerenciar ConteÃºdo"}
+                {isManageLoading === c.id ? "Carregando..." : "Gerenciar Conteúdo"}
               </button>
             </div>
           </div>
@@ -365,14 +365,14 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
         return (
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-              <h3 className="text-lg font-medium text-wfs-text ">Resultados das AvaliaÃ§Ãµes</h3>
+              <h3 className="text-lg font-medium text-wfs-text ">Resultados das Avaliações</h3>
               
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                   <input 
                     type="text" 
-                    placeholder="FILTRAR MATRÃCULA..." 
+                    placeholder="FILTRAR MATRÍCULA..." 
                     className="w-48 bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-[10px] font-medium  tracking-widest focus:outline-none focus:ring-2 focus:ring-wfs-accent/20 focus:border-wfs-accent transition-all"
                     value={filterMatricula}
                     onChange={e => setFilterMatricula(e.target.value)}
@@ -424,12 +424,12 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                         <tr key={r.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="p-4 truncate">
                             <p className="text-sm font-medium text-slate-800 truncate">{r.funcionario_nome}</p>
-                            <p className="text-[10px] text-slate-400  tracking-wider">MatrÃ­cula: {r.matricula}</p>
+                            <p className="text-[10px] text-slate-400  tracking-wider">Matrícula: {r.matricula}</p>
                           </td>
                           <td className="p-4 text-sm text-slate-600 truncate">{r.curso_nome}</td>
                           <td className="p-4 text-center">
                             <span className="bg-slate-100 text-slate-600 text-[10px] font-medium px-2 py-1 border border-slate-200  tracking-tighter">
-                              {r.tentativa}Âª Tentativa
+                              {r.tentativa}ª Tentativa
                             </span>
                           </td>
                           <td className="p-4 text-center text-sm text-slate-600">{new Date(r.data_conclusao).toLocaleDateString()}</td>
@@ -463,7 +463,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
           >
             <div className="bg-wfs-text p-4 text-white flex justify-between items-center">
               <h3 className="text-lg font-medium  tracking-tight">
-                {step === 1 ? (createdCursoId ? "Editar Curso" : "Novo Curso") : "Gerenciar ConteÃºdo do Curso"}
+                {step === 1 ? (createdCursoId ? "Editar Curso" : "Novo Curso") : "Gerenciar Conteúdo do Curso"}
               </h3>
               <button onClick={closeModal} className="hover:bg-white/10 p-1 rounded transition-colors">
                 <X className="w-5 h-5" />
@@ -478,7 +478,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                   </div>
                   <div>
                     <h4 className="text-xl font-medium text-slate-800">Curso Publicado!</h4>
-                    <p className="text-sm text-slate-500">O treinamento jÃ¡ estÃ¡ disponÃ­vel no portal do colaborador.</p>
+                    <p className="text-sm text-slate-500">O treinamento já está disponível no portal do colaborador.</p>
                   </div>
                   <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3">
                     <p className="text-xs font-medium  text-slate-400">Link para Compartilhamento</p>
@@ -494,7 +494,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                     </div>
                   </div>
                   <button onClick={closeModal} className="btn-primary w-full py-3 font-medium  tracking-widest">
-                    Voltar ao CatÃ¡logo
+                    Voltar ao Catálogo
                   </button>
                 </div>
               ) : step === 1 ? (
@@ -525,7 +525,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                         <label className="text-xs font-medium  text-slate-500 mb-1 block">Nome do Curso</label>
                         <input 
                           className="input-field" 
-                          placeholder="Ex: IntegraÃ§Ã£o de Novos Colaboradores"
+                          placeholder="Ex: Integração de Novos Colaboradores"
                           value={formData.nome} 
                           onChange={e => setFormData({...formData, nome: e.target.value})} 
                           required 
@@ -534,7 +534,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                         <div>
-                          <label className="text-xs font-medium  text-slate-500 mb-1 block">Data de InÃ­cio</label>
+                          <label className="text-xs font-medium  text-slate-500 mb-1 block">Data de Início</label>
                           <input 
                             type="date" 
                             className="input-field" 
@@ -569,13 +569,13 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                   {/* Videos Section */}
                   <section className="space-y-4">
                     <h4 className="text-sm font-medium  text-slate-800 flex items-center gap-2 border-b pb-2">
-                      <Video className="w-4 h-4 text-wfs-accent" /> Materiais de Estudo (VÃ­deos)
+                      <Video className="w-4 h-4 text-wfs-accent" /> Materiais de Estudo (Vídeos)
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
                       <div>
-                        <label className="text-[10px] font-medium  text-slate-400 block mb-1">TÃ­tulo do VÃ­deo</label>
+                        <label className="text-[10px] font-medium  text-slate-400 block mb-1">Título do Vídeo</label>
                         <input 
-                          placeholder="Ex: IntroduÃ§Ã£o ao Sistema" 
+                          placeholder="Ex: Introdução ao Sistema" 
                           className="input-field text-sm" 
                           value={videoData.titulo} 
                           onChange={e => setVideoData({...videoData, titulo: e.target.value})} 
@@ -583,11 +583,11 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                       </div>
                       <div className="flex gap-2 items-end">
                         <div className="flex-1 relative">
-                          <label className="text-[10px] font-medium  text-slate-400 block mb-1">Arquivo de VÃ­deo (MÃ¡x 20MB)</label>
+                          <label className="text-[10px] font-medium  text-slate-400 block mb-1">Arquivo de Vídeo (Máx 20MB)</label>
                           <div className="relative h-10 border rounded-lg bg-white flex items-center px-3 cursor-pointer hover:border-wfs-accent transition-all">
                             <Video className="w-4 h-4 text-slate-400 mr-2" />
                             <span className="text-xs text-slate-500 truncate">
-                              {videoData.url_video ? "VÃ­deo Selecionado" : "Selecionar MP4..."}
+                              {videoData.url_video ? "Vídeo Selecionado" : "Selecionar MP4..."}
                             </span>
                             <input 
                               type="file" 
@@ -597,7 +597,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                                 const file = e.target.files?.[0];
                                 if (file) {
                                   if (file.size > 20 * 1024 * 1024) {
-                                    alert("Arquivo muito grande! MÃ¡ximo 20MB.");
+                                    alert("Arquivo muito grande! Máximo 20MB.");
                                     return;
                                   }
                                   
@@ -656,11 +656,11 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                   {/* Evaluation Section */}
                   <section className="space-y-4">
                     <h4 className="text-sm font-medium  text-slate-800 flex items-center gap-2 border-b pb-2">
-                      <ClipboardList className="w-4 h-4 text-wfs-accent" /> AvaliaÃ§Ã£o Final
+                      <ClipboardList className="w-4 h-4 text-wfs-accent" /> Avaliação Final
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] font-medium  text-slate-400 block mb-1">Nota MÃ­nima (%)</label>
+                        <label className="text-[10px] font-medium  text-slate-400 block mb-1">Nota Mínima (%)</label>
                         <input 
                           type="number" 
                           className="input-field text-sm" 
@@ -669,7 +669,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-medium  text-slate-400 block mb-1">Tentativas MÃ¡ximas</label>
+                        <label className="text-[10px] font-medium  text-slate-400 block mb-1">Tentativas Máximas</label>
                         <input 
                           type="number" 
                           className="input-field text-sm" 
@@ -680,9 +680,9 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                     </div>
 
                     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-4">
-                      <h5 className="text-xs font-medium  text-slate-500">Nova QuestÃ£o</h5>
+                      <h5 className="text-xs font-medium  text-slate-500">Nova Questão</h5>
                       <input 
-                        placeholder="Enunciado da QuestÃ£o" 
+                        placeholder="Enunciado da Questão" 
                         className="input-field text-sm" 
                         value={novaQuestao.enunciado} 
                         onChange={e => setNovaQuestao({...novaQuestao, enunciado: e.target.value})} 
@@ -700,7 +700,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                               }}
                             />
                             <input 
-                              placeholder={`OpÃ§Ã£o ${idx + 1}`} 
+                              placeholder={`Opção ${idx + 1}`} 
                               className="input-field text-xs py-1.5" 
                               value={opt.texto} 
                               onChange={e => {
@@ -713,7 +713,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                         ))}
                       </div>
                       <button onClick={addQuestao} className="w-full py-2 border-2 border-dashed border-slate-300 text-slate-400 hover:border-wfs-accent hover:text-wfs-accent rounded-lg text-xs font-medium  transition-all">
-                        Adicionar QuestÃ£o Ã  Prova
+                        Adicionar Questão à Prova
                       </button>
                     </div>
 
@@ -750,4 +750,3 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
     </div>
   );
 };
-

@@ -93,18 +93,19 @@ app.get("/api/cursos", async (req, res) => {
 
 app.post("/api/cursos", async (req, res) => {
   const { nome, descricao, data_inicio, data_fim, capa_url } = req.body;
+  const { contrato } = req.query;
   const today = new Date().toISOString().split('T')[0];
 
   let { data, error } = await supabase
     .from("cursos")
-    .insert([{ nome, descricao: descricao || "", data_inicio, data_fim, obrigatorio: true, capa_url: capa_url || null, data_criacao: today }])
+    .insert([{ nome, descricao: descricao || "", data_inicio, data_fim, obrigatorio: true, capa_url: capa_url || null, data_criacao: today, contrato: contrato || null }])
     .select()
     .single();
 
   if (error && error.code === '42P01') {
     const result = await supabase
       .from("treinamentos")
-      .insert([{ nome, descricao: descricao || "", data_inicio, data_fim, obrigatorio: true, capa_url: capa_url || null, data_criacao: today }])
+      .insert([{ nome, descricao: descricao || "", data_inicio, data_fim, obrigatorio: true, capa_url: capa_url || null, data_criacao: today, contrato: contrato || null }])
       .select()
       .single();
     data = result.data;

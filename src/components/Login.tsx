@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "motion/react";
 import { Eye, EyeOff } from "lucide-react";
 import { User } from "../types";
@@ -43,7 +43,7 @@ export const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-mono text-wfs-muted mb-1  tracking-wider">UsuÃ¡rio</label>
+            <label className="block text-xs font-mono text-wfs-muted mb-1  tracking-wider">Usuário</label>
             <input 
               type="text" 
               className="input-field" 
@@ -85,4 +85,3 @@ export const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
     </div>
   );
 };
-
