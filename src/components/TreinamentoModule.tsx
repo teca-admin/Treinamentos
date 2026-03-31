@@ -287,7 +287,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
             key={t} 
             onClick={() => setTab(t)}
             className={`pb-2 px-4 text-xs font-bold uppercase tracking-wider transition-colors ${
-              tab === t ? 'border-b-2 border-nexus-primary text-nexus-primary' : 'text-slate-400 hover:text-slate-600'
+              tab === t ? 'border-b-2 border-wfs-accent text-wfs-accent' : 'text-slate-400 hover:text-slate-600'
             }`}
           >
             {t}
@@ -300,7 +300,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
       <div className="bg-white p-4 border-2 border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-black text-slate-800 tracking-tighter uppercase flex items-center gap-2">
-            <Video className="w-5 h-5 text-nexus-primary" />
+            <Video className="w-5 h-5 text-wfs-accent" />
             Catálogo de Cursos
           </h2>
         </div>
@@ -309,12 +309,12 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
           <div className="hidden md:flex items-center gap-2 bg-slate-100 px-3 py-1.5 border-2 border-slate-200">
             <LinkIcon className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-[10px] font-mono text-slate-500 truncate max-w-[200px]">{portalLink}</span>
-            <button onClick={copyLink} className="text-nexus-primary hover:text-red-700 p-1" title="Copiar Link do Portal">
+            <button onClick={copyLink} className="text-wfs-accent hover:text-red-700 p-1" title="Copiar Link do Portal">
               <Copy className="w-3.5 h-3.5" />
             </button>
           </div>
           {(user.role === "Admin" || user.role === "Treinamento") && (
-            <button onClick={() => { closeModal(); setShowForm(true); }} className="bg-nexus-primary text-white font-bold uppercase text-xs tracking-widest px-6 py-3 rounded-none hover:bg-nexus-primary/90 transition-all shadow-lg flex items-center gap-2">
+            <button onClick={() => { closeModal(); setShowForm(true); }} className="bg-wfs-accent text-white font-bold uppercase text-xs tracking-widest px-6 py-3 rounded-none hover:bg-wfs-accent/90 transition-all shadow-lg flex items-center gap-2">
               <Plus className="w-4 h-4" /> Criar Curso
             </button>
           )}
@@ -343,9 +343,9 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
               <button 
                 onClick={() => manageContent(c)}
                 disabled={isManageLoading === c.id}
-                className="text-nexus-primary text-[10px] font-bold uppercase hover:underline flex items-center gap-1 disabled:opacity-50"
+                className="text-wfs-accent text-[10px] font-bold uppercase hover:underline flex items-center gap-1 disabled:opacity-50"
               >
-                {isManageLoading === c.id && <div className="w-3 h-3 border-2 border-nexus-primary/30 border-t-nexus-primary rounded-full animate-spin" />}
+                {isManageLoading === c.id && <div className="w-3 h-3 border-2 border-wfs-accent/30 border-t-wfs-accent rounded-full animate-spin" />}
                 {isManageLoading === c.id ? "Carregando..." : "Gerenciar Conteúdo"}
               </button>
             </div>
@@ -365,7 +365,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
         return (
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-              <h3 className="text-lg font-bold text-nexus-sidebar uppercase">Resultados das Avaliações</h3>
+              <h3 className="text-lg font-bold text-wfs-text uppercase">Resultados das Avaliações</h3>
               
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative">
@@ -373,7 +373,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                   <input 
                     type="text" 
                     placeholder="FILTRAR MATRÍCULA..." 
-                    className="w-48 bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-nexus-primary/20 focus:border-nexus-primary transition-all"
+                    className="w-48 bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-wfs-accent/20 focus:border-wfs-accent transition-all"
                     value={filterMatricula}
                     onChange={e => setFilterMatricula(e.target.value)}
                   />
@@ -461,7 +461,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
             animate={{ scale: 1, opacity: 1 }} 
             className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden"
           >
-            <div className="bg-nexus-sidebar p-4 text-white flex justify-between items-center">
+            <div className="bg-wfs-text p-4 text-white flex justify-between items-center">
               <h3 className="text-lg font-bold uppercase tracking-tight">
                 {step === 1 ? (createdCursoId ? "Editar Curso" : "Novo Curso") : "Gerenciar Conteúdo do Curso"}
               </h3>
@@ -569,7 +569,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                   {/* Videos Section */}
                   <section className="space-y-4">
                     <h4 className="text-sm font-bold uppercase text-slate-800 flex items-center gap-2 border-b pb-2">
-                      <Video className="w-4 h-4 text-nexus-primary" /> Materiais de Estudo (Vídeos)
+                      <Video className="w-4 h-4 text-wfs-accent" /> Materiais de Estudo (Vídeos)
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
                       <div>
@@ -584,7 +584,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                       <div className="flex gap-2 items-end">
                         <div className="flex-1 relative">
                           <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Arquivo de Vídeo (Máx 20MB)</label>
-                          <div className="relative h-10 border rounded-lg bg-white flex items-center px-3 cursor-pointer hover:border-nexus-primary transition-all">
+                          <div className="relative h-10 border rounded-lg bg-white flex items-center px-3 cursor-pointer hover:border-wfs-accent transition-all">
                             <Video className="w-4 h-4 text-slate-400 mr-2" />
                             <span className="text-xs text-slate-500 truncate">
                               {videoData.url_video ? "Vídeo Selecionado" : "Selecionar MP4..."}
@@ -644,7 +644,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                           </div>
                           <button 
                             onClick={() => deleteVideo(v.id)}
-                            className="text-slate-400 hover:text-nexus-primary transition-colors"
+                            className="text-slate-400 hover:text-wfs-accent transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -656,7 +656,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                   {/* Evaluation Section */}
                   <section className="space-y-4">
                     <h4 className="text-sm font-bold uppercase text-slate-800 flex items-center gap-2 border-b pb-2">
-                      <ClipboardList className="w-4 h-4 text-nexus-primary" /> Avaliação Final
+                      <ClipboardList className="w-4 h-4 text-wfs-accent" /> Avaliação Final
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -712,7 +712,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                           </div>
                         ))}
                       </div>
-                      <button onClick={addQuestao} className="w-full py-2 border-2 border-dashed border-slate-300 text-slate-400 hover:border-nexus-primary hover:text-nexus-primary rounded-lg text-xs font-bold uppercase transition-all">
+                      <button onClick={addQuestao} className="w-full py-2 border-2 border-dashed border-slate-300 text-slate-400 hover:border-wfs-accent hover:text-wfs-accent rounded-lg text-xs font-bold uppercase transition-all">
                         Adicionar Questão à Prova
                       </button>
                     </div>
@@ -726,7 +726,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User, curre
                           </div>
                           <button 
                             onClick={() => deleteQuestao(q.id)}
-                            className="text-slate-300 hover:text-nexus-primary"
+                            className="text-slate-300 hover:text-wfs-accent"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

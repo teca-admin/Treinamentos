@@ -204,9 +204,9 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   };
 
   return (
-    <div className="min-h-screen bg-nexus-bg flex flex-col">
-      <div className="flex-1 bg-nexus-bg overflow-hidden flex flex-col">
-        <div className="bg-nexus-primary py-3 px-6 text-white flex justify-between items-center sticky top-0 z-10 shadow-md">
+    <div className="min-h-screen bg-wfs-bg flex flex-col">
+      <div className="flex-1 bg-wfs-bg overflow-hidden flex flex-col">
+        <div className="bg-wfs-accent py-3 px-6 text-white flex justify-between items-center sticky top-0 z-10 shadow-md">
           <div className="flex items-center gap-4">
             {(!employee && step !== 1 && onExit) && (
               <button onClick={onExit} className="p-1.5 hover:bg-white/10 rounded-full transition-colors" title="Voltar ao Sistema">
@@ -261,7 +261,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                 {cursos.map(c => (
                   <div 
                     key={c.id} 
-                    className={`card transition-all overflow-hidden p-0 flex flex-col ${c.isBlocked ? 'opacity-60 grayscale cursor-not-allowed' : 'hover:border-nexus-primary cursor-pointer group'}`} 
+                    className={`card transition-all overflow-hidden p-0 flex flex-col ${c.isBlocked ? 'opacity-60 grayscale cursor-not-allowed' : 'hover:border-wfs-accent cursor-pointer group'}`} 
                     onClick={() => !c.isBlocked && startCurso(c)}
                   >
                     <div className="aspect-video bg-slate-100 relative">
@@ -283,15 +283,15 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                     </div>
                     <div className="p-4 flex-1 flex flex-col">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className={`font-bold ${!c.isBlocked && 'group-hover:text-nexus-primary'} transition-colors`}>{c.nome}</h3>
+                        <h3 className={`font-bold ${!c.isBlocked && 'group-hover:text-wfs-accent'} transition-colors`}>{c.nome}</h3>
                         {c.isApproved && (
                           <span className="bg-green-100 text-green-700 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">Aprovado</span>
                         )}
                       </div>
                       <div className="flex items-center justify-between mt-auto pt-4">
-                        <div className={`flex items-center text-[10px] font-bold uppercase gap-1 ${c.isBlocked ? 'text-slate-400' : 'text-nexus-primary'}`}>
+                        <div className={`flex items-center text-[10px] font-bold uppercase gap-1 ${c.isBlocked ? 'text-slate-400' : 'text-wfs-accent'}`}>
                           {isCursoLoading && selectedCurso?.id === c.id ? (
-                            <div className="w-3 h-3 border-2 border-nexus-primary/30 border-t-nexus-primary rounded-full animate-spin mr-1" />
+                            <div className="w-3 h-3 border-2 border-wfs-accent/30 border-t-wfs-accent rounded-full animate-spin mr-1" />
                           ) : null}
                           {c.isBlocked ? c.blockReason : (c.isApproved ? 'Refazer Treinamento' : 'Iniciar Treinamento')} {!c.isBlocked && <ChevronRight className="w-3 h-3" />}
                         </div>
@@ -321,7 +321,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
               
               <div className="space-y-6">
                 <div className="flex justify-between items-end">
-                  <h2 className="text-2xl font-bold text-nexus-sidebar">{selectedCurso.nome}</h2>
+                  <h2 className="text-2xl font-bold text-wfs-text">{selectedCurso.nome}</h2>
                   <div className="text-right">
                     <p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Progresso do Conteúdo</p>
                     <div className="flex items-center gap-3">
@@ -378,7 +378,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                         <ClipboardList className="w-4 h-4" /> Avaliação de Conhecimento
                       </h3>
                       {!isExamUnlocked && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-nexus-primary uppercase bg-red-50 px-2 py-1 rounded">
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-wfs-accent uppercase bg-red-50 px-2 py-1 rounded">
                           <AlertCircle className="w-3 h-3" /> Assista todos os vídeos para liberar
                         </span>
                       )}
@@ -392,9 +392,9 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                             <div className="space-y-2">
                               {q.opcoes.map((opt: any) => (
                                 <label key={opt.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                                  answers[q.id] === opt.id ? 'border-nexus-primary bg-red-50' : 'hover:bg-slate-50'
+                                  answers[q.id] === opt.id ? 'border-wfs-accent bg-red-50' : 'hover:bg-slate-50'
                                 }`}>
-                                  <input type="radio" name={`q-${q.id}`} checked={answers[q.id] === opt.id} onChange={() => setAnswers({...answers, [q.id]: opt.id})} className="accent-nexus-primary" />
+                                  <input type="radio" name={`q-${q.id}`} checked={answers[q.id] === opt.id} onChange={() => setAnswers({...answers, [q.id]: opt.id})} className="accent-wfs-accent" />
                                   <span className="text-sm">{opt.texto}</span>
                                 </label>
                               ))}
@@ -447,7 +447,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <div className="w-16 h-16 bg-red-50 text-nexus-primary rounded-full flex items-center justify-center mx-auto border border-red-100">
+                    <div className="w-16 h-16 bg-red-50 text-wfs-accent rounded-full flex items-center justify-center mx-auto border border-red-100">
                       <AlertCircle className="w-8 h-8" />
                     </div>
                     <div className="space-y-2">
@@ -474,7 +474,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                   {result.status === "Reprovado" && canRetry ? (
                     <button 
                       onClick={() => startCurso(selectedCurso)} 
-                      className="w-full max-w-xs bg-nexus-primary hover:bg-red-700 text-white py-4 rounded font-bold uppercase text-xs tracking-[0.2em] transition-all shadow-lg shadow-red-900/10"
+                      className="w-full max-w-xs bg-wfs-accent hover:bg-red-700 text-white py-4 rounded font-bold uppercase text-xs tracking-[0.2em] transition-all shadow-lg shadow-red-900/10"
                     >
                       Tentar Novamente
                     </button>

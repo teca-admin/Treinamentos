@@ -23,24 +23,27 @@ export default function App() {
   if (!user) return <Login onLogin={setUser} />;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="h-16 bg-white text-slate-800 flex items-center justify-between px-6 sticky top-0 z-50 shadow-sm border-b border-slate-100">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-nexus-primary rounded flex items-center justify-center font-black text-xl text-white">N</div>
-          <h1 className="text-xl font-bold tracking-tighter text-nexus-sidebar">NEXUS</h1>
-          <span className="ml-4 bg-nexus-primary/10 text-nexus-primary text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-nexus-primary/20">
+    <div className="min-h-screen flex flex-col font-sans bg-wfs-bg text-wfs-text">
+      {/* Topbar WFS (64px) */}
+      <header className="h-16 bg-wfs-surface flex items-center justify-between px-6 sticky top-0 z-50 border-b border-wfs-border">
+        <div className="flex items-center gap-4">
+          <img 
+            src="https://lh3.googleusercontent.com/d/1sNzDKhdh2zH8d8DoyqIjx8l5LzBEXN5g" 
+            alt="WFS Logo" 
+            className="h-12 object-contain"
+          />
+          <span className="bg-wfs-accent-light text-wfs-accent-dark text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-sm border border-wfs-accent/20">
             Treinamentos
           </span>
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden md:block">
+          <span className="text-xs font-medium text-wfs-muted hidden md:block">
             {user.username}
           </span>
           <button
             onClick={() => setUser(null)}
-            className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+            className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-wfs-muted hover:text-wfs-danger hover:bg-red-50 rounded-sm transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Sair
@@ -48,19 +51,20 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 bg-nexus-bg overflow-y-auto">
-        <TreinamentoModule user={user} currentContract={currentContract} />
+      {/* Main Content (p-4 mobile, p-8 desktop, max-w-7xl) */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto w-full p-4 md:p-8">
+          <TreinamentoModule user={user} currentContract={currentContract} />
+        </div>
       </main>
 
       {/* Footer */}
-      <footer className="h-10 bg-white border-t flex items-center justify-between px-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-        <div>NEXUS v1.0.0 • Plataforma de Treinamentos</div>
+      <footer className="h-12 bg-wfs-surface border-t border-wfs-border flex items-center justify-between px-6 text-[11px] font-medium font-mono text-wfs-hint">
+        <div>WFS v1.0.0 • Plataforma de Treinamentos</div>
         <div className="flex gap-4">
-          <button onClick={() => setIsPortal(true)} className="hover:text-nexus-primary transition-colors">
+          <button onClick={() => setIsPortal(true)} className="hover:text-wfs-accent transition-colors font-sans uppercase font-bold text-[10px]">
             Acessar Portal do Colaborador
           </button>
-          <span>Suporte: 0800-NEXUS</span>
         </div>
       </footer>
     </div>
