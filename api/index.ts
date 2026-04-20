@@ -158,11 +158,12 @@ app.post("/api/cursos/conteudo", async (req, res) => {
   const { curso_id, titulo, url_video, ordem } = req.body;
   console.log(`Tentando salvar vídeo: ${titulo} para o curso ${curso_id}`);
 
-  let { error } = await supabase.from("cursos_conteudos").insert([{ curso_id, titulo, url_video, ordem }]);
+  let { data: inserted, error } = await supabase.from("cursos_conteudos").insert([{ curso_id, titulo, url_video, ordem }]).select().single();
 
   if (error && error.code === '42P01') {
     console.log("Tabela 'cursos_conteudos' não encontrada, tentando 'treinamento_conteudos'...");
-    const result = await supabase.from("treinamento_conteudos").insert([{ curso_id, titulo, url_video, ordem }]);
+    const result = await supabase.from("treinamento_conteudos").insert([{ curso_id, titulo, url_video, ordem }]).select().single();
+    inserted = result.data;
     error = result.error;
   }
 
@@ -171,7 +172,7 @@ app.post("/api/cursos/conteudo", async (req, res) => {
     return res.status(400).json({ success: false, message: error.message });
   }
 
-  res.json({ success: true });
+  res.json({ success: true, id: inserted?.id });
 });
 
 app.delete("/api/cursos/conteudo/:id", async (req, res) => {
@@ -195,7 +196,9 @@ app.post("/api/cursos/avaliacao", async (req, res) => {
     if (aErr) throw aErr;
 
     for (const q of questoes) {
-      const { data: quest, error: qErr } = await supabase.from("questoes").insert([{ avaliacao_id: aval.id, enunciado: q.enunciado }]).select().single();
+      const questaoPayload: any = { avaliacao_id: aval.id, enunciado: q.enunciado };
+      if (q.conteudo_id !== undefined && q.conteudo_id !== null) questaoPayload.conteudo_id = q.conteudo_id;
+      const { data: quest, error: qErr } = await supabase.from("questoes").insert([questaoPayload]).select().single();
       if (qErr) throw qErr;
       const opcoesToInsert = q.opcoes.map((opt: any) => ({ questao_id: quest.id, texto: opt.texto, correta: opt.correta ? true : false }));
       await supabase.from("opcoes").insert(opcoesToInsert);
