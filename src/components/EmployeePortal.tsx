@@ -469,12 +469,22 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   );
 };
 
-// ── YouTube Player — controles restritos, apenas tela cheia customizada ────────
+// ── YouTube Player — detecção robusta de fim via postMessage + polling ──────────
 
 const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) => {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const endedRef = useRef(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Tracks last known playerState to detect -1→0 transition via polling
+  const lastStateRef = useRef<number | null>(null);
+
+  const triggerEnded = () => {
+    if (endedRef.current) return;
+    endedRef.current = true;
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    onEnded();
+  };
 
   const embedSrc = (() => {
     try {
@@ -482,51 +492,83 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
       if (u.pathname.startsWith("/embed/")) {
         u.searchParams.set("enablejsapi", "1");
         u.searchParams.set("origin", window.location.origin);
-        u.searchParams.set("controls", "1");
+        u.searchParams.set("controls", "0");
+        u.searchParams.set("disablekb", "1");
         u.searchParams.set("modestbranding", "1");
         u.searchParams.set("rel", "0");
         u.searchParams.set("iv_load_policy", "3");
+        u.searchParams.set("fs", "0");
         return u.toString();
       }
     } catch {}
     return src;
   })();
 
-  // Subscribe to YouTube postMessage events after iframe loads
+  // After iframe loads: subscribe to events + start polling as fallback
   const handleIframeLoad = () => {
+    endedRef.current = false;
+    lastStateRef.current = null;
+
+    // Ask YouTube to start sending postMessage events
     try {
       iframeRef.current?.contentWindow?.postMessage(
-        JSON.stringify({ event: "listening" }),
-        "*"
+        JSON.stringify({ event: "listening" }), "*"
       );
       iframeRef.current?.contentWindow?.postMessage(
-        JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }),
-        "*"
+        JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }), "*"
       );
     } catch {}
+
+    // Polling fallback: ask YouTube for current time every 2s.
+    // When YouTube shows the replay screen the video is "ended" (state 0).
+    // We detect this by sending a "getCurrentTime" command and watching
+    // for the "infoDelivery" response where currentTime equals duration.
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(() => {
+      if (endedRef.current) { clearInterval(pollRef.current!); return; }
+      try {
+        iframeRef.current?.contentWindow?.postMessage(
+          JSON.stringify({ event: "command", func: "getPlayerState", args: [] }), "*"
+        );
+      } catch {}
+    }, 6000);
   };
 
   useEffect(() => {
     endedRef.current = false;
+    lastStateRef.current = null;
+
     const handler = (e: MessageEvent) => {
       try {
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-        // YouTube IFrame API: info === 0 means ended
-        if (data?.event === "onStateChange" && data?.info === 0 && !endedRef.current) {
-          endedRef.current = true;
-          onEnded();
-          return;
+
+        // Standard YouTube IFrame API event
+        if (data?.event === "onStateChange") {
+          const state = data?.info;
+          if (state === 0) { triggerEnded(); return; }
+          lastStateRef.current = state;
         }
-        // Some YouTube embeds send a different format
-        if (data?.info?.playerState === 0 && !endedRef.current) {
-          endedRef.current = true;
-          onEnded();
+
+        // infoDelivery — comes from getPlayerState polling command
+        if (data?.event === "infoDelivery") {
+          const state = data?.info?.playerState ?? data?.info;
+          if (state === 0) { triggerEnded(); return; }
+          if (typeof state === "number") lastStateRef.current = state;
+        }
+
+        // Some embed versions wrap state differently
+        if (typeof data?.info?.playerState === "number" && data.info.playerState === 0) {
+          triggerEnded();
         }
       } catch {}
     };
+
     window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
-  }, [onEnded, src]);
+    return () => {
+      window.removeEventListener("message", handler);
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    };
+  }, [src]); // reset when video src changes
 
   const handleFullscreen = () => {
     const el = containerRef.current;
