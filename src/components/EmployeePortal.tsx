@@ -482,23 +482,43 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
       if (u.pathname.startsWith("/embed/")) {
         u.searchParams.set("enablejsapi", "1");
         u.searchParams.set("origin", window.location.origin);
-        u.searchParams.set("controls", "0");
-        u.searchParams.set("disablekb", "1");
+        u.searchParams.set("controls", "1");
         u.searchParams.set("modestbranding", "1");
         u.searchParams.set("rel", "0");
         u.searchParams.set("iv_load_policy", "3");
-        u.searchParams.set("fs", "0");
         return u.toString();
       }
     } catch {}
     return src;
   })();
 
+  // Subscribe to YouTube postMessage events after iframe loads
+  const handleIframeLoad = () => {
+    try {
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ event: "listening" }),
+        "*"
+      );
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }),
+        "*"
+      );
+    } catch {}
+  };
+
   useEffect(() => {
+    endedRef.current = false;
     const handler = (e: MessageEvent) => {
       try {
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        // YouTube IFrame API: info === 0 means ended
         if (data?.event === "onStateChange" && data?.info === 0 && !endedRef.current) {
+          endedRef.current = true;
+          onEnded();
+          return;
+        }
+        // Some YouTube embeds send a different format
+        if (data?.info?.playerState === 0 && !endedRef.current) {
           endedRef.current = true;
           onEnded();
         }
@@ -506,7 +526,7 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [onEnded]);
+  }, [onEnded, src]);
 
   const handleFullscreen = () => {
     const el = containerRef.current;
@@ -524,6 +544,7 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
         allowFullScreen
         className="w-full h-full"
         title="YouTube video"
+        onLoad={handleIframeLoad}
       />
       <button
         onClick={handleFullscreen}
