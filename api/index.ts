@@ -92,10 +92,10 @@ app.get("/api/cursos", async (req, res) => {
 });
 
 app.post("/api/cursos", async (req, res) => {
-  const { nome, descricao, data_inicio, data_fim, capa_url, tipo_conteudo, responsavel, finalidade, assunto } = req.body;
+  const { nome, descricao, data_inicio, data_fim, capa_url, tipo_conteudo, responsavel, finalidade, assunto, publico_alvo, base, sumario } = req.body;
   const { contrato } = req.query;
   const today = new Date().toISOString().split('T')[0];
-  const payload = { nome, descricao: descricao || "", data_inicio, data_fim, obrigatorio: true, capa_url: capa_url || null, data_criacao: today, contrato: contrato || null, tipo_conteudo: tipo_conteudo || null, responsavel: responsavel || null, finalidade: finalidade || null, assunto: assunto || null };
+  const payload = { nome, descricao: descricao || "", data_inicio, data_fim, obrigatorio: true, capa_url: capa_url || null, data_criacao: today, contrato: contrato || null, tipo_conteudo: tipo_conteudo || null, responsavel: responsavel || null, finalidade: finalidade || null, assunto: assunto || null, publico_alvo: publico_alvo || [], base: base || null, sumario: sumario || null };
 
   let { data, error } = await supabase.from("cursos").insert([payload]).select().single();
 
@@ -109,8 +109,8 @@ app.post("/api/cursos", async (req, res) => {
 });
 
 app.put("/api/cursos/:id", async (req, res) => {
-  const { nome, data_inicio, data_fim, capa_url, tipo_conteudo, responsavel, finalidade, assunto } = req.body;
-  const fields = { nome, data_inicio, data_fim, capa_url, tipo_conteudo: tipo_conteudo || null, responsavel: responsavel || null, finalidade: finalidade || null, assunto: assunto || null };
+  const { nome, data_inicio, data_fim, capa_url, tipo_conteudo, responsavel, finalidade, assunto, publico_alvo, base, sumario } = req.body;
+  const fields = { nome, data_inicio, data_fim, capa_url, tipo_conteudo: tipo_conteudo || null, responsavel: responsavel || null, finalidade: finalidade || null, assunto: assunto || null, publico_alvo: publico_alvo || [], base: base || null, sumario: sumario || null };
   let { error } = await supabase.from("cursos").update(fields).eq("id", req.params.id);
 
   if (error && error.code === '42P01') {
@@ -297,6 +297,47 @@ app.get("/api/cursos/:id/participantes", async (req, res) => {
 // CONFIG
 app.get("/api/config/supabase", (req, res) => {
   res.json({ url: supabaseUrl, key: supabaseKey });
+});
+
+// ── BASES ────────────────────────────────────────────────────────────────────
+app.get("/api/bases", async (_req, res) => {
+  const { data, error } = await supabase.from("bases").select("*").order("nome");
+  if (error) return res.status(500).json({ success: false, message: error.message });
+  res.json(data || []);
+});
+
+app.post("/api/bases", async (req, res) => {
+  const { nome } = req.body;
+  if (!nome) return res.status(400).json({ success: false, message: "Nome obrigatório" });
+  const { data, error } = await supabase.from("bases").insert([{ nome }]).select().single();
+  if (error) return res.status(400).json({ success: false, message: error.message });
+  res.json({ success: true, base: data });
+});
+
+// ── VÍDEOS ASSISTIDOS — marca/verifica vídeos já vistos por funcionário ────────
+// Marca um vídeo como assistido
+app.post("/api/videos-assistidos", async (req, res) => {
+  const { funcionario_id, curso_id, conteudo_id } = req.body;
+  if (!funcionario_id || !curso_id || !conteudo_id)
+    return res.status(400).json({ success: false, message: "Parâmetros obrigatórios faltando" });
+
+  // upsert — não duplica se já existir
+  const { error } = await supabase.from("videos_assistidos")
+    .upsert([{ funcionario_id, curso_id, conteudo_id }], { onConflict: "funcionario_id,curso_id,conteudo_id" });
+
+  res.json({ success: !error });
+});
+
+// Retorna lista de conteudo_ids já assistidos pelo funcionário num curso
+app.get("/api/videos-assistidos/:funcionario_id/:curso_id", async (req, res) => {
+  const { funcionario_id, curso_id } = req.params;
+  const { data, error } = await supabase.from("videos_assistidos")
+    .select("conteudo_id")
+    .eq("funcionario_id", funcionario_id)
+    .eq("curso_id", curso_id);
+
+  if (error) return res.status(500).json({ success: false, message: error.message });
+  res.json({ watched: (data || []).map((r: any) => r.conteudo_id) });
 });
 
 export default app;

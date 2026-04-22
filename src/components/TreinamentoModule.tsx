@@ -38,6 +38,12 @@ interface Conteudo { id: number; titulo: string; url_video: string; ordem: numbe
 
 const TIPOS_CONTEUDO = ["SST", "Melhoria Contínua", "Informativo", "Comunicado"];
 
+// Flags de público alvo — exibidas na lista de presença e controlam acesso no portal
+const PUBLICO_ALVO_FLAGS: { flag: string; label: string; cargo: string }[] = [
+  { flag: "Auxiliar", label: "Auxiliar", cargo: "AUXILIAR DE SERVICOS AEROPORTUARIOS/RAMPA" },
+  { flag: "OPE", label: "OPE", cargo: "OPERADOR DE EQUIPAMENTOS/RAMPA" },
+];
+
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export const TreinamentoModule = ({ user, currentContract }: { user: User; currentContract: Contract }) => {
@@ -79,7 +85,15 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
     responsavel: "",
     finalidade: "",
     assunto: "",
+    publico_alvo: [] as string[],
+    base: "",
+    sumario: "",
   });
+
+  // Bases
+  const [bases, setBases] = useState<string[]>([]);
+  const [addingBase, setAddingBase] = useState(false);
+  const [newBaseInput, setNewBaseInput] = useState("");
 
   // Video state — YouTube only
   const [videoData, setVideoData] = useState({ titulo: "", url_video: "" });
@@ -104,12 +118,17 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
         setKnownFinalidades([...new Set(data.map((c: any) => c.finalidade).filter(Boolean))] as string[]);
       });
 
+  const loadBases = () =>
+    fetch("/api/bases")
+      .then((r) => r.json())
+      .then((data) => setBases(data.map((b: any) => b.nome)));
+
   const loadResultados = () =>
     fetch(`/api/treinamentos/resultados?contrato=${currentContract}`)
       .then((r) => r.json())
       .then(setResultados);
 
-  useEffect(() => { load(); loadResultados(); }, [currentContract]);
+  useEffect(() => { load(); loadResultados(); loadBases(); }, [currentContract]);
 
   const handleCapaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -178,6 +197,9 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
         responsavel: curso.responsavel || "",
         finalidade: curso.finalidade || "",
         assunto: curso.assunto || "",
+        publico_alvo: curso.publico_alvo || [],
+        base: curso.base || "",
+        sumario: curso.sumario || "",
       });
       setCapaPreview(curso.capa_url || "");
       setCapaFile(null);
@@ -246,7 +268,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
 
   const closeModal = () => {
     setShowForm(false); setShowSuccess(false); setStep(1); setCreatedCursoId(null);
-    setFormData({ nome: "", data_inicio: new Date().toISOString().split("T")[0], data_fim: "", capa_url: "", tipo_conteudo: "", responsavel: "", finalidade: "", assunto: "" });
+    setFormData({ nome: "", data_inicio: new Date().toISOString().split("T")[0], data_fim: "", capa_url: "", tipo_conteudo: "", responsavel: "", finalidade: "", assunto: "", publico_alvo: [], base: "", sumario: "" });
     setCapaFile(null); setCapaPreview("");
     setConteudos([]); setQuestoes([]);
     setVideoData({ titulo: "", url_video: "" }); setYoutubeUrl("");
@@ -271,47 +293,87 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
     const win = window.open('', '_blank');
     if (!win) return;
     const dateStr = formatDatePtLong(presencaCurso?.data_inicio || '');
+    const sumarioText = presencaCurso?.sumario || '';
+    const publicoAlvo = Array.isArray(presencaCurso?.publico_alvo)
+      ? presencaCurso.publico_alvo.join(', ')
+      : (presencaCurso?.publico_alvo || '-');
+    const base = presencaCurso?.base || '-';
     const rows = presencaParticipantes.map((p, i) => `
       <tr>
-        <td style="text-align:center;border:1px solid #ddd;padding:7px 6px">${i + 1}</td>
-        <td style="border:1px solid #ddd;padding:7px 6px">${p.matricula || ''}</td>
-        <td style="border:1px solid #ddd;padding:7px 6px">${p.nome || ''}</td>
-        <td style="border:1px solid #ddd;padding:7px 6px">${p.cpf || ''}</td>
-        <td style="border:1px solid #ddd;padding:7px 6px">${p.cargo || ''}</td>
-        <td style="border:1px solid #ddd;padding:7px 6px;min-width:160px">&nbsp;</td>
+        <td style="text-align:center;border:1px solid #ddd;padding:7px 6px;background:${i % 2 === 0 ? '#fff' : '#fff9f9'};color:#c00;font-weight:bold">${i + 1}</td>
+        <td style="border:1px solid #ddd;padding:7px 6px;background:${i % 2 === 0 ? '#fff' : '#fff9f9'}">${p.matricula || ''}</td>
+        <td style="border:1px solid #ddd;padding:7px 6px;background:${i % 2 === 0 ? '#fff' : '#fff9f9'}">${p.nome || ''}</td>
+        <td style="border:1px solid #ddd;padding:7px 6px;background:${i % 2 === 0 ? '#fff' : '#fff9f9'}">${p.cpf || ''}</td>
+        <td style="border:1px solid #ddd;padding:7px 6px;background:${i % 2 === 0 ? '#fff' : '#fff9f9'}">${p.cargo || ''}</td>
+        <td style="border:1px solid #ddd;padding:7px 6px;min-width:160px;background:${i % 2 === 0 ? '#fff' : '#fff9f9'}">&nbsp;</td>
       </tr>`).join('');
 
     win.document.write(`<!DOCTYPE html><html><head><title>Lista de Presença - ${presencaCurso?.nome || ''}</title>
     <style>
       *{box-sizing:border-box;margin:0;padding:0}
       body{font-family:Arial,sans-serif;font-size:11px;color:#000;padding:20px}
-      h1{color:#CC2222;font-size:17px;text-align:right;border-bottom:2px solid #CC2222;padding-bottom:5px;margin-bottom:12px;letter-spacing:1px}
-      .curso-nome{font-size:12px;font-weight:bold;margin-bottom:10px;color:#333}
-      .info-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #bbb;margin-bottom:14px}
-      .info-cell{padding:6px 10px;border-right:1px solid #bbb;border-bottom:1px solid #bbb}
-      .info-cell:nth-child(even){border-right:none}
-      .info-label{font-weight:bold;font-size:8px;text-transform:uppercase;color:#666;letter-spacing:.5px}
-      .info-value{font-size:11px;margin-top:2px}
+      .header-bar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;border-bottom:2px solid #CC2222;padding-bottom:6px}
+      .logo-area{display:flex;align-items:center}
+      .logo-circle{width:36px;height:36px;border-radius:50%;border:2px solid #CC2222;display:flex;align-items:center;justify-content:center;margin-right:6px}
+      .logo-wfs{font-size:13px;font-weight:bold;color:#CC2222}
+      .title-area{text-align:right}
+      .lista-title{font-size:18px;font-weight:bold;color:#CC2222;letter-spacing:2px}
+      .sub-code{font-size:8px;color:#888;margin-top:1px}
+      .info-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #bbb;margin-bottom:0}
+      .info-cell{padding:5px 8px;border-right:1px solid #bbb;border-bottom:1px solid #bbb}
+      .info-cell.no-right{border-right:none}
+      .info-cell.full{grid-column:1/-1;border-right:none}
+      .info-label{font-weight:bold;font-size:9px;text-transform:uppercase;color:#000}
+      .info-value{font-size:10px;margin-top:1px}
+      .sumario-box{border:1px solid #bbb;border-top:none;padding:6px 8px;margin-bottom:10px}
+      .sumario-title{font-weight:bold;font-size:9px;text-align:center;background:#eee;padding:3px;margin:-6px -8px 4px -8px}
+      .obs-box{border:1px solid #bbb;border-top:none;padding:5px 8px;margin-bottom:10px;background:#fff}
+      .obs-title{font-weight:bold;font-size:9px}
+      .obs-text{font-size:9px;margin-top:2px;line-height:1.4}
       table{width:100%;border-collapse:collapse}
       thead th{background:#CC2222;color:#fff;padding:6px 8px;text-align:left;font-size:9px;text-transform:uppercase;border:1px solid #CC2222;letter-spacing:.5px}
-      tbody td{vertical-align:middle}
-      tbody tr:nth-child(even) td{background:#FFF5F5}
+      tbody td{vertical-align:middle;font-size:10px}
+      @media print{body{padding:10px}}
     </style></head><body>
-    <h1>LISTA DE PRESENÇA</h1>
-    <div class="curso-nome">${presencaCurso?.nome || ''}</div>
-    <div class="info-grid">
-      <div class="info-cell"><div class="info-label">Data</div><div class="info-value">${dateStr}</div></div>
-      <div class="info-cell"><div class="info-label">Finalidade</div><div class="info-value">${presencaCurso?.finalidade || '-'}</div></div>
-      <div class="info-cell"><div class="info-label">Assunto</div><div class="info-value">${presencaCurso?.assunto || '-'}</div></div>
-      <div class="info-cell"><div class="info-label">Multiplicador</div><div class="info-value">${presencaCurso?.responsavel || '-'}</div></div>
+
+    <div class="header-bar">
+      <div class="logo-area">
+        <div class="logo-circle"><span style="font-weight:bold;font-size:11px;color:#CC2222">wfs</span></div>
+      </div>
+      <div class="title-area">
+        <div class="lista-title">LISTA DE PRESENÇA</div>
+        <div class="sub-code">F-QHSE-018-00 - EFETIVIDADE: MAIO/2025</div>
+      </div>
     </div>
+
+    <div class="info-grid">
+      <div class="info-cell"><span class="info-label">FINALIDADE:</span> <span class="info-value">${presencaCurso?.finalidade || '-'}</span></div>
+      <div class="info-cell no-right"><span class="info-label">DATA:</span> <span class="info-value">${dateStr}</span></div>
+      <div class="info-cell"><span class="info-label">ASSUNTO:</span> <span class="info-value">${presencaCurso?.assunto || '-'}</span></div>
+      <div class="info-cell no-right"><span class="info-label">MULTIPLICADOR:</span> <span class="info-value">${presencaCurso?.responsavel || '-'}</span></div>
+      <div class="info-cell"><span class="info-label">BASE:</span> <span class="info-value">${base}</span></div>
+      <div class="info-cell no-right"><span class="info-label">CARGA HORÁRIA:</span> <span class="info-value">${presencaCurso?.carga_horaria || '-'}</span></div>
+      <div class="info-cell full"><span class="info-label">PÚBLICO ALVO:</span> <span class="info-value">${publicoAlvo}</span></div>
+    </div>
+
+    ${sumarioText ? `
+    <div class="sumario-box">
+      <div class="sumario-title">SUMÁRIO</div>
+      <div style="font-size:9px;line-height:1.5;white-space:pre-line">${sumarioText}</div>
+    </div>` : ''}
+
+    <div class="obs-box">
+      <div class="obs-title">OBSERVAÇÕES:</div>
+      <div class="obs-text">Declaro ter o pleno conhecimento das informações que foram passadas e não possuo quaisquer duvidas a respeito de seu teor e conteúdo contida nesta lista, comprometo-me a cumprir tais orientações durante o desenvolvimento de minhas tarefas.</div>
+    </div>
+
     <table><thead><tr>
-      <th style="width:40px;text-align:center">Nº</th>
-      <th style="width:100px">Matrícula</th>
+      <th style="width:30px;text-align:center">Nº</th>
+      <th style="width:90px">Matrícula</th>
       <th>Nome</th>
-      <th style="width:130px">CPF</th>
+      <th style="width:120px">CPF</th>
       <th style="width:150px">Função</th>
-      <th style="width:170px">Assinatura</th>
+      <th style="width:160px">Assinatura</th>
     </tr></thead><tbody>${rows}</tbody></table>
     </body></html>`);
     win.document.close();
@@ -343,6 +405,17 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
     }
     setAddingFinalidade(false);
     setNewFinalidadeInput("");
+  };
+
+  const confirmNewBase = async () => {
+    const val = newBaseInput.trim();
+    if (val) {
+      await fetch("/api/bases", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome: val }) });
+      setBases((prev) => [...new Set([...prev, val])]);
+      setFormData((f) => ({ ...f, base: val }));
+    }
+    setAddingBase(false);
+    setNewBaseInput("");
   };
 
   return (
@@ -610,6 +683,68 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                     )}
                   </div>
 
+                  {/* Base */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 mb-1 block">Base</label>
+                    {addingBase ? (
+                      <div className="flex gap-2">
+                        <input className="input-field flex-1" placeholder="Ex: TECA MAO, RAMPA MAO..."
+                          value={newBaseInput} onChange={(e) => setNewBaseInput(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), confirmNewBase())} autoFocus />
+                        <button type="button" onClick={confirmNewBase}
+                          className="px-3 py-2 bg-wfs-accent text-white text-xs rounded hover:bg-red-700 transition-colors">OK</button>
+                        <button type="button" onClick={() => { setAddingBase(false); setNewBaseInput(""); }}
+                          className="px-3 py-2 bg-slate-100 text-slate-600 text-xs rounded hover:bg-slate-200 transition-colors">Cancelar</button>
+                      </div>
+                    ) : (
+                      <select className="input-field" value={formData.base}
+                        onChange={(e) => {
+                          if (e.target.value === "__add__") { setAddingBase(true); }
+                          else { setFormData({ ...formData, base: e.target.value }); }
+                        }}>
+                        <option value="">Selecionar base...</option>
+                        {bases.map((b) => <option key={b} value={b}>{b}</option>)}
+                        <option value="__add__">+ Cadastrar nova base...</option>
+                      </select>
+                    )}
+                  </div>
+
+                  {/* Público Alvo */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 mb-2 block">Público Alvo <span className="text-slate-400 font-normal">(controla quem vê o treinamento no portal)</span></label>
+                    <div className="flex flex-wrap gap-3">
+                      {PUBLICO_ALVO_FLAGS.map(({ flag, label, cargo }) => {
+                        const checked = formData.publico_alvo.includes(flag);
+                        return (
+                          <label key={flag} className={`flex items-center gap-2 px-3 py-2 rounded border cursor-pointer transition-all select-none text-xs font-medium
+                            ${checked ? "border-wfs-accent bg-red-50 text-wfs-accent" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                            <input type="checkbox" checked={checked} className="accent-wfs-accent"
+                              onChange={(e) => {
+                                const next = e.target.checked
+                                  ? [...formData.publico_alvo, flag]
+                                  : formData.publico_alvo.filter((f) => f !== flag);
+                                setFormData({ ...formData, publico_alvo: next });
+                              }} />
+                            <span className="font-bold">{label}</span>
+                            <span className="text-[10px] text-slate-400 hidden md:block">({cargo})</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {formData.publico_alvo.length === 0 && (
+                      <p className="text-[10px] text-amber-600 mt-1">⚠️ Nenhum público selecionado — o curso ficará visível para todos.</p>
+                    )}
+                  </div>
+
+                  {/* Sumário */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 mb-1 block">Sumário <span className="text-slate-400 font-normal">(aparece na lista de presença)</span></label>
+                    <textarea className="input-field resize-none" rows={5}
+                      placeholder="Ex: 1. Segurança do Trabalho: Política de Segurança...&#10;2. Prevenção de Incêndio...&#10;3. Meio Ambiente..."
+                      value={formData.sumario}
+                      onChange={(e) => setFormData({ ...formData, sumario: e.target.value })} />
+                  </div>
+
                   <div className="flex justify-end gap-3 pt-4 border-t">
                     <button type="button" onClick={closeModal} className="px-4 py-2 text-slate-500 font-medium text-xs hover:text-slate-700 transition-colors">Cancelar</button>
                     <button type="submit" className="btn-primary flex items-center gap-2">
@@ -741,21 +876,34 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
             <div className="p-6 overflow-y-auto flex-1">
               {/* Header info */}
               <div className="border border-wfs-accent/30 rounded-lg overflow-hidden mb-6">
-                <div className="bg-wfs-accent px-4 py-2">
+                <div className="bg-wfs-accent px-4 py-2 flex justify-between items-center">
                   <h4 className="text-white text-sm font-medium tracking-widest">LISTA DE PRESENÇA</h4>
+                  <span className="text-white/70 text-[9px] font-mono">F-QHSE-018-00 · EFETIVIDADE: MAIO/2025</span>
                 </div>
                 <div className="grid grid-cols-2 divide-x divide-slate-200">
                   {[
-                    { label: "DATA", value: formatDatePtLong(presencaCurso?.data_inicio) },
                     { label: "FINALIDADE", value: presencaCurso?.finalidade || '-' },
+                    { label: "DATA", value: formatDatePtLong(presencaCurso?.data_inicio) },
                     { label: "ASSUNTO", value: presencaCurso?.assunto || '-' },
                     { label: "MULTIPLICADOR", value: presencaCurso?.responsavel || '-' },
+                    { label: "BASE", value: presencaCurso?.base || '-' },
+                    { label: "PÚBLICO ALVO", value: Array.isArray(presencaCurso?.publico_alvo) ? presencaCurso.publico_alvo.join(', ') || '-' : '-' },
                   ].map(({ label, value }) => (
                     <div key={label} className="p-3 border-b border-slate-200">
                       <p className="text-[9px] font-bold text-slate-500 tracking-widest">{label}</p>
                       <p className="text-sm font-medium text-slate-800 mt-0.5">{value}</p>
                     </div>
                   ))}
+                  {presencaCurso?.sumario && (
+                    <div className="col-span-2 p-3 border-b border-slate-200">
+                      <p className="text-[9px] font-bold text-slate-500 tracking-widest mb-1">SUMÁRIO</p>
+                      <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">{presencaCurso.sumario}</p>
+                    </div>
+                  )}
+                  <div className="col-span-2 p-3 bg-slate-50 border-b border-slate-200">
+                    <p className="text-[9px] font-bold text-slate-500 tracking-widest mb-1">OBSERVAÇÕES</p>
+                    <p className="text-[10px] text-slate-600 leading-relaxed">Declaro ter o pleno conhecimento das informações que foram passadas e não possuo quaisquer duvidas a respeito de seu teor e conteúdo contida nesta lista, comprometo-me a cumprir tais orientações durante o desenvolvimento de minhas tarefas.</p>
+                  </div>
                 </div>
               </div>
 

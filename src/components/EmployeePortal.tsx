@@ -20,7 +20,22 @@ interface Conteudo { id: number; titulo: string; url_video: string; ordem: numbe
 interface Opcao { id: number; texto: string; correta: boolean | number; }
 interface Questao { id: number; enunciado: string; opcoes: Opcao[]; conteudo_id?: number | null; }
 
-// ── Component ──────────────────────────────────────────────────────────────────
+// Mapa de flags para cargos — deve coincidir com TreinamentoModule
+const CARGO_TO_FLAG: Record<string, string> = {
+  "AUXILIAR DE SERVICOS AEROPORTUARIOS/RAMPA": "Auxiliar",
+  "OPERADOR DE EQUIPAMENTOS/RAMPA": "OPE",
+};
+
+function getEmployeeFlag(cargo: string): string | null {
+  return CARGO_TO_FLAG[cargo?.trim().toUpperCase()] || null;
+}
+
+function cursoVisibleToEmployee(curso: any, employeeFlag: string | null): boolean {
+  const pa: string[] = Array.isArray(curso.publico_alvo) ? curso.publico_alvo : [];
+  if (pa.length === 0) return true; // sem restrição → todos veem
+  if (!employeeFlag) return false; // funcionário sem flag → vê apenas cursos sem restrição
+  return pa.includes(employeeFlag);
+}
 
 export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   const [step, setStep] = useState(1);
@@ -62,6 +77,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
       if (data.success && data.funcionario) {
         const emp = data.funcionario;
         setEmployee(emp);
+        const employeeFlag = getEmployeeFlag(emp.cargo || "");
         const [rres, cres] = await Promise.all([
           fetch(`/api/treinamentos/resultados?funcionario_id=${emp.id}`),
           fetch("/api/cursos"),
@@ -69,7 +85,9 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
         const rdata = await rres.json();
         const cdata = await cres.json();
         const today = new Date(); today.setHours(0, 0, 0, 0);
-        const processed = cdata.map((c: any) => {
+        const processed = cdata
+          .filter((c: any) => cursoVisibleToEmployee(c, employeeFlag)) // ← filtro por público alvo
+          .map((c: any) => {
           const startDate = c.data_inicio ? new Date(c.data_inicio) : null;
           const endDate = c.data_fim ? new Date(c.data_fim) : null;
           if (startDate) startDate.setHours(0, 0, 0, 0);
@@ -107,20 +125,35 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
       const built: any[] = [];
       const conteudos: Conteudo[] = data.conteudos || [];
       const questoes: Questao[] = data.questoes || [];
-      const isReturning = curso.reprovadoCount > 0 || curso.isApproved;
+
+      // A partir da 2ª tentativa (reprovadoCount > 0), busca quais vídeos já foram assistidos
+      let watchedVideoIds: number[] = [];
+      const isRetry = curso.reprovadoCount > 0;
+      if (isRetry && employee?.id) {
+        try {
+          const wRes = await fetch(`/api/videos-assistidos/${employee.id}/${curso.id}`);
+          const wData = await wRes.json();
+          watchedVideoIds = wData.watched || [];
+        } catch { /* se falhar, não bloqueia — trata como não assistido */ }
+      }
 
       conteudos.forEach((v) => {
-        built.push({ type: "video", data: v, videoId: v.id });
+        const alreadyWatched = isRetry && watchedVideoIds.includes(v.id);
+        // Na 2ª+ tentativa, se o vídeo já foi assistido, não adiciona ao fluxo
+        if (!alreadyWatched) {
+          built.push({ type: "video", data: v, videoId: v.id });
+        }
         const linked = questoes.filter((q) => q.conteudo_id === v.id);
         linked.forEach((q) => built.push({ type: "question", data: q, videoId: v.id }));
       });
       const unlinked = questoes.filter((q) => !q.conteudo_id);
       unlinked.forEach((q) => built.push({ type: "question", data: q, videoId: null }));
 
+      // Se todos os vídeos foram pulados (retry completo), garante que há pelo menos as questões
       setItems(built);
       setCurrentItemIndex(0);
       setAnswers({});
-      setWatchedCurrent(isReturning);
+      setWatchedCurrent(false);
       setActivityAnswered(false);
       setSelectedOption(null);
       setStep(3);
@@ -152,6 +185,17 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
     if (currentItem.type === "video") return watchedCurrent;
     if (currentItem.type === "question") return activityAnswered;
     return false;
+  };
+
+  const markVideoWatched = async (conteudoId: number) => {
+    if (!employee?.id || !selectedCurso?.id) return;
+    try {
+      await fetch("/api/videos-assistidos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ funcionario_id: employee.id, curso_id: selectedCurso.id, conteudo_id: conteudoId }),
+      });
+    } catch { /* silencioso — não bloqueia o fluxo */ }
   };
 
   const handleSelectOption = (questionId: number, optionId: number) => {
@@ -350,9 +394,15 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
                   <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
                     {isYoutubeUrl(currentItem.data.url_video) ? (
-                      <YoutubePlayer src={currentItem.data.url_video} onEnded={() => setWatchedCurrent(true)} />
+                      <YoutubePlayer src={currentItem.data.url_video} onEnded={() => {
+                        setWatchedCurrent(true);
+                        markVideoWatched(currentItem.data.id);
+                      }} />
                     ) : (
-                      <RestrictedVideoPlayer src={currentItem.data.url_video} onEnded={() => setWatchedCurrent(true)} />
+                      <RestrictedVideoPlayer src={currentItem.data.url_video} onEnded={() => {
+                        setWatchedCurrent(true);
+                        markVideoWatched(currentItem.data.id);
+                      }} />
                     )}
                   </div>
 
