@@ -73,6 +73,22 @@ app.get("/api/funcionarios/matricula/:matricula", async (req, res) => {
   res.json({ success: true, funcionario });
 });
 
+// PORTAL — Busca funcionário por CPF (usado pelo EmployeePortal)
+app.get("/api/funcionarios/cpf/:cpf", async (req, res) => {
+  // Normaliza CPF removendo pontuação
+  const cpfLimpo = req.params.cpf.replace(/[^0-9]/g, "");
+  const { data: funcionario, error } = await supabase
+    .from("funcionarios")
+    .select("*")
+    .eq("cpf", cpfLimpo)
+    .single();
+
+  if (error) {
+    return res.status(404).json({ success: false, message: "CPF não encontrado" });
+  }
+  res.json({ success: true, funcionario });
+});
+
 // TREINAMENTO API
 
 app.get("/api/cursos", async (req, res) => {

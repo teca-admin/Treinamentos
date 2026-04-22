@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Video, ClipboardList, Trash2, Save, CheckCircle, X, Image as ImageIcon, Link as LinkIcon, Copy, Search, Filter, Youtube, ChevronDown, ChevronUp, FileText, Printer } from "lucide-react";
+import { Plus, Video, ClipboardList, Trash2, Save, CheckCircle, X, Image as ImageIcon, Link as LinkIcon, Copy, Search, Filter, Youtube, ChevronDown, ChevronUp, FileText, Printer, Pencil } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { User, Contract } from "../types";
 import { getSupabaseClient } from "../lib/supabase";
@@ -806,13 +806,13 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                               {linked.length > 0 && (
                                 <div className="space-y-1 mb-2">
                                   {linked.map((q, qi) => (
-                                    <div key={q.id} className="flex items-center justify-between p-2 bg-blue-50 rounded border border-blue-100">
-                                      <span className="text-xs text-slate-700 flex items-center gap-2">
-                                        <CheckCircle className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                                        {qi + 1}. {q.enunciado}
-                                      </span>
-                                      <button type="button" onClick={() => setQuestoes((qs) => qs.filter((x) => x.id !== q.id))} className="text-slate-300 hover:text-wfs-accent shrink-0 ml-2"><Trash2 className="w-3.5 h-3.5" /></button>
-                                    </div>
+                                    <EditableQuestion
+                                      key={q.id}
+                                      q={q}
+                                      qi={qi}
+                                      onDelete={() => setQuestoes((qs) => qs.filter((x) => x.id !== q.id))}
+                                      onSave={(updated) => setQuestoes((qs) => qs.map((x) => x.id === q.id ? updated : x))}
+                                    />
                                   ))}
                                 </div>
                               )}
@@ -959,6 +959,105 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
         </div>
       )}
     </div>
+  );
+};
+
+// ── Editable Question — visualizar e editar questão existente ─────────────────
+
+const EditableQuestion = ({
+  q, qi, onDelete, onSave,
+}: {
+  q: any; qi: number;
+  onDelete: () => void;
+  onSave: (updated: any) => void;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [enunciado, setEnunciado] = useState(q.enunciado);
+  const [opcoes, setOpcoes] = useState<{ texto: string; correta: boolean }[]>(
+    q.opcoes.map((o: any) => ({ texto: o.texto, correta: !!o.correta }))
+  );
+
+  const save = () => {
+    if (!enunciado.trim()) { alert("Insira o enunciado."); return; }
+    if (opcoes.some((o) => !o.texto.trim())) { alert("Preencha todas as opções."); return; }
+    if (!opcoes.some((o) => o.correta)) { alert("Marque a opção correta."); return; }
+    onSave({ ...q, enunciado, opcoes });
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setEnunciado(q.enunciado);
+    setOpcoes(q.opcoes.map((o: any) => ({ texto: o.texto, correta: !!o.correta })));
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <div className="bg-blue-50 rounded border border-blue-100 p-2">
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-xs text-slate-700 flex items-start gap-2 flex-1 min-w-0">
+            <CheckCircle className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+            <span className="font-medium">{qi + 1}. {q.enunciado}</span>
+          </span>
+          <div className="flex items-center gap-1 shrink-0">
+            <button type="button" onClick={() => setEditing(true)}
+              className="text-blue-400 hover:text-blue-600 transition-colors p-0.5" title="Editar questão">
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button type="button" onClick={onDelete}
+              className="text-slate-300 hover:text-wfs-accent transition-colors p-0.5" title="Excluir questão">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+        <div className="mt-1.5 ml-5 space-y-0.5">
+          {opcoes.map((opt, idx) => (
+            <div key={idx} className={`text-[10px] flex items-center gap-1.5 ${opt.correta ? "text-green-700 font-semibold" : "text-slate-400"}`}>
+              <span className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 ${opt.correta ? "bg-green-500 border-green-500" : "border-slate-300"}`}>
+                {opt.correta && <span className="w-1.5 h-1.5 bg-white rounded-full" />}
+              </span>
+              {opt.texto}
+              {opt.correta && <span className="text-green-600 ml-0.5">(correta)</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-3 space-y-2">
+      <p className="text-[10px] font-semibold text-yellow-700 tracking-wider">✏️ EDITANDO QUESTÃO {qi + 1}</p>
+      <input
+        className="input-field text-sm w-full"
+        placeholder="Enunciado da questão"
+        value={enunciado}
+        onChange={(e) => setEnunciado(e.target.value)}
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {opcoes.map((opt, idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            <input type="radio" name={`edit-q-${q.id}`} checked={opt.correta}
+              onChange={() => setOpcoes(opcoes.map((o, i) => ({ ...o, correta: i === idx })))} />
+            <input
+              placeholder={`Opção ${idx + 1}`}
+              className="input-field text-xs py-1.5 flex-1"
+              value={opt.texto}
+              onChange={(e) => { const n = [...opcoes]; n[idx] = { ...n[idx], texto: e.target.value }; setOpcoes(n); }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2 pt-1">
+        <button type="button" onClick={save} className="btn-primary text-xs px-4 py-2 flex items-center gap-1">
+          <Save className="w-3.5 h-3.5" /> Salvar
+        </button>
+        <button type="button" onClick={cancel} className="text-xs px-4 py-2 text-slate-400 hover:text-slate-600">
+          Cancelar
+        </button>
+      </div>
+    </motion.div>
   );
 };
 

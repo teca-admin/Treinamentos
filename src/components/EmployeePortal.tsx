@@ -39,7 +39,7 @@ function cursoVisibleToEmployee(curso: any, employeeFlag: string | null): boolea
 
 export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   const [step, setStep] = useState(1);
-  const [matricula, setMatricula] = useState("");
+  const [cpf, setCpf] = useState("");
   const [turno, setTurno] = useState("");
   const [employee, setEmployee] = useState<any>(null);
   const [cursos, setCursos] = useState<any[]>([]);
@@ -60,7 +60,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
   // ── Logout ────────────────────────────────────────────────────────────────────
   const handleLogout = () => {
-    setEmployee(null); setStep(1); setMatricula(""); setTurno("");
+    setEmployee(null); setStep(1); setCpf(""); setTurno("");
     setSelectedCurso(null); setContent(null); setResult(null);
     setItems([]); setAnswers({}); setCurrentItemIndex(0);
   };
@@ -68,11 +68,13 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   // ── Login ─────────────────────────────────────────────────────────────────────
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!matricula) return;
+    if (!cpf) return;
     if (!turno) { alert("Selecione seu turno para continuar."); return; }
     setIsLoginLoading(true);
     try {
-      const res = await fetch("/api/funcionarios/matricula/" + matricula);
+      // Normaliza CPF: remove qualquer pontuação antes de enviar
+      const cpfLimpo = cpf.replace(/[^0-9]/g, "");
+      const res = await fetch("/api/funcionarios/cpf/" + cpfLimpo);
       const data = await res.json();
       if (data.success && data.funcionario) {
         const emp = data.funcionario;
@@ -108,7 +110,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
         });
         setCursos(processed);
         setStep(2);
-      } else { alert("Matrícula não encontrada"); }
+      } else { alert("CPF não encontrado"); }
     } catch { alert("Erro ao acessar o portal. Tente novamente."); }
     finally { setIsLoginLoading(false); }
   };
@@ -199,9 +201,10 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   };
 
   const handleSelectOption = (questionId: number, optionId: number) => {
-    if (activityAnswered) return;
+    // Permite trocar a resposta livremente enquanto não avançar
     setSelectedOption(optionId);
     setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+    // Marca como respondida para habilitar o botão Próximo, mas NÃO trava as opções
     setActivityAnswered(true);
   };
 
@@ -236,12 +239,15 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
         body: JSON.stringify({ funcionario_id: employee.id, curso_id: selectedCurso.id, nota: score, turno }),
       });
       const data = await res.json();
-      setResult({ score, status: data.status });
+      // Captura o reprovadoCount ANTES do incremento para exibição correta na tela de resultado
+      const currentReprovadoCount = cursos.find((c) => c.id === selectedCurso.id)?.reprovadoCount || 0;
+      const newReprovadoCount = currentReprovadoCount + (data.status === "Reprovado" ? 1 : 0);
+      setResult({ score, status: data.status, tentativaAtual: newReprovadoCount });
 
       setCursos((prev) => prev.map((c) => {
         if (c.id !== selectedCurso.id) return c;
         const isApproved = c.isApproved || data.status === "Aprovado";
-        const reprovadoCount = c.reprovadoCount + (data.status === "Reprovado" ? 1 : 0);
+        const reprovadoCount = newReprovadoCount;
         const attemptsExceeded = reprovadoCount >= 3;
         const isBlocked = isApproved || attemptsExceeded;
         const blockReason = isApproved ? "Treinamento Concluído" : attemptsExceeded ? "Limite de tentativas excedido (3)" : c.blockReason;
@@ -272,7 +278,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-xs font-medium">{employee.nome}</p>
-                <p className="text-[9px] opacity-60">{employee.matricula} · {turno}</p>
+                <p className="text-[9px] opacity-60">CPF: {employee.cpf ? employee.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : employee.matricula} · {turno}</p>
               </div>
               <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-full transition-all"><LogOut className="w-5 h-5" /></button>
             </div>
@@ -287,9 +293,24 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
               <h2 className="text-xl font-medium text-center text-slate-800">Acesse seus Treinamentos</h2>
               <form onSubmit={handleLogin} className="space-y-5">
                 <div>
-                  <label className="text-xs font-medium text-slate-500 block mb-1">Matrícula</label>
-                  <input className="input-field text-center text-xl font-mono" value={matricula}
-                    onChange={(e) => setMatricula(e.target.value)} placeholder="000000" required autoFocus />
+                  <label className="text-xs font-medium text-slate-500 block mb-1">CPF</label>
+                  <input
+                    className="input-field text-center text-xl font-mono tracking-widest"
+                    value={cpf}
+                    onChange={(e) => {
+                      // Aplica máscara 000.000.000-00
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                      let masked = digits;
+                      if (digits.length > 9) masked = digits.slice(0,3) + "." + digits.slice(3,6) + "." + digits.slice(6,9) + "-" + digits.slice(9);
+                      else if (digits.length > 6) masked = digits.slice(0,3) + "." + digits.slice(3,6) + "." + digits.slice(6);
+                      else if (digits.length > 3) masked = digits.slice(0,3) + "." + digits.slice(3);
+                      setCpf(masked);
+                    }}
+                    placeholder="000.000.000-00"
+                    inputMode="numeric"
+                    required
+                    autoFocus
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-slate-500 block mb-1">Turno <span className="text-wfs-accent">*</span></label>
@@ -305,7 +326,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                     <option value="3° Turno">3° Turno</option>
                   </select>
                 </div>
-                <button type="submit" disabled={isLoginLoading || !turno || !matricula}
+                <button type="submit" disabled={isLoginLoading || !turno || cpf.replace(/\D/g,"").length < 11}
                   className="btn-primary w-full py-4 font-medium tracking-widest disabled:opacity-50">
                   {isLoginLoading ? "Acessando..." : "Entrar no Portal"}
                 </button>
@@ -433,11 +454,11 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                       return (
                         <label key={opt.id}
                           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all select-none
-                            ${activityAnswered
-                              ? isSelected ? "border-wfs-accent bg-red-50 font-medium" : "opacity-50 border-slate-200"
-                              : isSelected ? "border-wfs-accent bg-red-50" : "hover:bg-slate-50 border-slate-200"}`}>
+                            ${isSelected
+                              ? "border-wfs-accent bg-blue-50 font-medium"
+                              : "hover:bg-slate-50 border-slate-200"}`}>
                           <input type="radio" name={`q-${currentItem.data.id}`} checked={isSelected}
-                            onChange={() => !activityAnswered && handleSelectOption(currentItem.data.id, opt.id)}
+                            onChange={() => handleSelectOption(currentItem.data.id, opt.id)}
                             className="accent-wfs-accent" />
                           <span className="text-sm">{opt.texto}</span>
                         </label>
@@ -445,8 +466,16 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                     })}
                   </div>
 
+                  {!activityAnswered && (
+                    <div className="flex items-center gap-2 text-[11px] text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      Selecione uma opção para continuar. Você pode trocar sua resposta antes de avançar.
+                    </div>
+                  )}
+
                   {activityAnswered && (
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-1">
+                      <p className="text-[10px] text-slate-400 text-center">Pode trocar sua resposta antes de avançar.</p>
                       <button onClick={advance}
                         className="btn-primary w-full py-3 font-medium tracking-widest flex items-center justify-center gap-2">
                         {isLastItem ? (isExamLoading ? "Enviando..." : "Finalizar Curso") : "Próximo"} <ChevronRight className="w-4 h-4" />
@@ -461,7 +490,8 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           {/* ── Step 4: Result ── */}
           {step === 4 && result && (() => {
             const currentCurso = cursos.find((c) => c.id === selectedCurso?.id);
-            const attemptsLeft = 3 - (currentCurso?.reprovadoCount || 0);
+            const tentativaAtual = result.tentativaAtual ?? (currentCurso?.reprovadoCount || 0);
+            const attemptsLeft = 3 - tentativaAtual;
             const canRetry = attemptsLeft > 0 && !currentCurso?.isApproved;
             const isApproved = result.status === "Aprovado";
 
@@ -483,7 +513,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                   </div>
                   {!isApproved && (
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded text-[10px] font-medium text-slate-600 tracking-widest border border-slate-200">
-                      Tentativa {currentCurso?.reprovadoCount || 0} de 3
+                      Tentativa {tentativaAtual} de 3
                     </div>
                   )}
                 </div>
@@ -497,12 +527,12 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
                 <div className="flex flex-col items-center gap-4">
                   {!isApproved && canRetry ? (
-                    <button onClick={() => startCurso(selectedCurso)}
+                    <button onClick={() => startCurso(currentCurso || selectedCurso)}
                       className="w-full max-w-xs bg-wfs-accent hover:bg-red-700 text-white py-4 rounded font-medium text-xs tracking-[0.2em] transition-all shadow-lg">
                       Tentar Novamente
                     </button>
                   ) : (
-                    <button onClick={() => setStep(2)}
+                    <button onClick={() => { setStep(2); setSelectedCurso(null); setResult(null); }}
                       className="w-full max-w-xs bg-slate-900 hover:bg-slate-800 text-white py-4 rounded font-medium text-xs tracking-[0.2em] transition-all">
                       Voltar para meus cursos
                     </button>
