@@ -92,22 +92,15 @@ app.get("/api/cursos", async (req, res) => {
 });
 
 app.post("/api/cursos", async (req, res) => {
-  const { nome, descricao, data_inicio, data_fim, capa_url } = req.body;
+  const { nome, descricao, data_inicio, data_fim, capa_url, tipo_conteudo, responsavel, finalidade, assunto } = req.body;
   const { contrato } = req.query;
   const today = new Date().toISOString().split('T')[0];
+  const payload = { nome, descricao: descricao || "", data_inicio, data_fim, obrigatorio: true, capa_url: capa_url || null, data_criacao: today, contrato: contrato || null, tipo_conteudo: tipo_conteudo || null, responsavel: responsavel || null, finalidade: finalidade || null, assunto: assunto || null };
 
-  let { data, error } = await supabase
-    .from("cursos")
-    .insert([{ nome, descricao: descricao || "", data_inicio, data_fim, obrigatorio: true, capa_url: capa_url || null, data_criacao: today, contrato: contrato || null }])
-    .select()
-    .single();
+  let { data, error } = await supabase.from("cursos").insert([payload]).select().single();
 
   if (error && error.code === '42P01') {
-    const result = await supabase
-      .from("treinamentos")
-      .insert([{ nome, descricao: descricao || "", data_inicio, data_fim, obrigatorio: true, capa_url: capa_url || null, data_criacao: today, contrato: contrato || null }])
-      .select()
-      .single();
+    const result = await supabase.from("treinamentos").insert([payload]).select().single();
     data = result.data;
     error = result.error;
   }
@@ -116,11 +109,12 @@ app.post("/api/cursos", async (req, res) => {
 });
 
 app.put("/api/cursos/:id", async (req, res) => {
-  const { nome, data_inicio, data_fim, capa_url } = req.body;
-  let { error } = await supabase.from("cursos").update({ nome, data_inicio, data_fim, capa_url }).eq("id", req.params.id);
+  const { nome, data_inicio, data_fim, capa_url, tipo_conteudo, responsavel, finalidade, assunto } = req.body;
+  const fields = { nome, data_inicio, data_fim, capa_url, tipo_conteudo: tipo_conteudo || null, responsavel: responsavel || null, finalidade: finalidade || null, assunto: assunto || null };
+  let { error } = await supabase.from("cursos").update(fields).eq("id", req.params.id);
 
   if (error && error.code === '42P01') {
-    const result = await supabase.from("treinamentos").update({ nome, data_inicio, data_fim, capa_url }).eq("id", req.params.id);
+    const result = await supabase.from("treinamentos").update(fields).eq("id", req.params.id);
     error = result.error;
   }
 
@@ -210,7 +204,7 @@ app.post("/api/cursos/avaliacao", async (req, res) => {
 });
 
 app.post("/api/treinamentos/responder", async (req, res) => {
-  const { funcionario_id, curso_id, nota } = req.body;
+  const { funcionario_id, curso_id, nota, turno } = req.body;
 
   let { data: results, error: rErr } = await supabase.from("resultados_treinamento").select("status").eq("funcionario_id", funcionario_id).eq("curso_id", curso_id);
 
@@ -229,10 +223,10 @@ app.post("/api/treinamentos/responder", async (req, res) => {
   const status = nota >= (avaliacao?.nota_minima || 0) ? "Aprovado" : "Reprovado";
   const today = new Date().toISOString().split('T')[0];
 
-  let { error } = await supabase.from("resultados_treinamento").insert([{ funcionario_id, curso_id, nota, status, data_conclusao: today }]);
+  let { error } = await supabase.from("resultados_treinamento").insert([{ funcionario_id, curso_id, nota, status, data_conclusao: today, turno: turno || null }]);
 
   if (error && error.code === '42P01') {
-    const result = await supabase.from("treinamento_resultados").insert([{ funcionario_id, curso_id, nota, status, data_conclusao: today }]);
+    const result = await supabase.from("treinamento_resultados").insert([{ funcionario_id, curso_id, nota, status, data_conclusao: today, turno: turno || null }]);
     error = result.error;
   }
 
@@ -243,7 +237,7 @@ app.get("/api/treinamentos/resultados", async (req, res) => {
   const { contrato, funcionario_id } = req.query;
   let query = supabase
     .from("resultados_treinamento")
-    .select(`id, nota, status, data_conclusao, curso_id, funcionario_id, funcionarios ( nome, matricula ), cursos ( nome )`)
+    .select(`id, nota, status, data_conclusao, curso_id, funcionario_id, funcionarios ( nome, matricula, cpf, cargo ), cursos ( nome )`)
     .order("id", { ascending: false });
 
   if (funcionario_id) query = query.eq("funcionario_id", funcionario_id);
@@ -264,6 +258,40 @@ app.get("/api/treinamentos/resultados", async (req, res) => {
     };
   }) || [];
   res.json(processedResults);
+});
+
+app.get("/api/cursos/:id/participantes", async (req, res) => {
+  let { data: results, error } = await supabase
+    .from("resultados_treinamento")
+    .select(`funcionario_id, funcionarios ( nome, matricula, cpf, cargo )`)
+    .eq("curso_id", req.params.id);
+
+  if (error && error.code === '42P01') {
+    const r = await supabase
+      .from("treinamento_resultados")
+      .select(`funcionario_id, funcionarios ( nome, matricula, cpf, cargo )`)
+      .eq("curso_id", req.params.id);
+    results = r.data;
+  }
+
+  const seen = new Set<number>();
+  const unique = (results || []).filter((r: any) => {
+    if (seen.has(r.funcionario_id)) return false;
+    seen.add(r.funcionario_id);
+    return true;
+  });
+
+  const sorted = unique
+    .map((r: any) => ({
+      funcionario_id: r.funcionario_id,
+      nome: r.funcionarios?.nome || '',
+      matricula: String(r.funcionarios?.matricula || ''),
+      cpf: r.funcionarios?.cpf || '',
+      cargo: r.funcionarios?.cargo || '',
+    }))
+    .sort((a: any, b: any) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+  res.json(sorted);
 });
 
 // CONFIG

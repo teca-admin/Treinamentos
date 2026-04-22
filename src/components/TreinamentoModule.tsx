@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Video, ClipboardList, Trash2, Save, CheckCircle, X, Image as ImageIcon, Link as LinkIcon, Copy, Search, Filter, Youtube, Upload, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Video, ClipboardList, Trash2, Save, CheckCircle, X, Image as ImageIcon, Link as LinkIcon, Copy, Search, Filter, Youtube, ChevronDown, ChevronUp, FileText, Printer } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { User, Contract } from "../types";
 import { getSupabaseClient } from "../lib/supabase";
@@ -23,11 +23,20 @@ function isYoutubeUrl(url: string) {
   return !!getYoutubeEmbedUrl(url);
 }
 
+const formatDatePtLong = (dateStr: string) => {
+  if (!dateStr) return '-';
+  const months = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+  const d = new Date(dateStr + 'T12:00:00');
+  return `${d.getDate()} DE ${months[d.getMonth()]} DE ${d.getFullYear()}`;
+};
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface Opcao { texto: string; correta: boolean; }
 interface Questao { id: number; enunciado: string; opcoes: Opcao[]; conteudo_id?: number | null; }
 interface Conteudo { id: number; titulo: string; url_video: string; ordem: number; }
+
+const TIPOS_CONTEUDO = ["SST", "Melhoria Contínua", "Informativo", "Comunicado"];
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -47,18 +56,34 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
   const [showSuccess, setShowSuccess] = useState(false);
   const [isManageLoading, setIsManageLoading] = useState<number | null>(null);
 
+  // Known responsaveis/finalidades extracted from existing courses
+  const [knownResponsaveis, setKnownResponsaveis] = useState<string[]>([]);
+  const [knownFinalidades, setKnownFinalidades] = useState<string[]>([]);
+  const [addingResponsavel, setAddingResponsavel] = useState(false);
+  const [newResponsavelInput, setNewResponsavelInput] = useState("");
+  const [addingFinalidade, setAddingFinalidade] = useState(false);
+  const [newFinalidadeInput, setNewFinalidadeInput] = useState("");
+
+  // Lista de presença
+  const [showPresenca, setShowPresenca] = useState(false);
+  const [presencaCurso, setPresencaCurso] = useState<any>(null);
+  const [presencaParticipantes, setPresencaParticipantes] = useState<any[]>([]);
+  const [isPresencaLoading, setIsPresencaLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     nome: "",
     data_inicio: new Date().toISOString().split("T")[0],
     data_fim: "",
     capa_url: "",
+    tipo_conteudo: "",
+    responsavel: "",
+    finalidade: "",
+    assunto: "",
   });
 
-  // Video state
-  const [videoSourceType, setVideoSourceType] = useState<"upload" | "youtube">("upload");
+  // Video state — YouTube only
   const [videoData, setVideoData] = useState({ titulo: "", url_video: "" });
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [conteudos, setConteudos] = useState<Conteudo[]>([]);
 
@@ -73,7 +98,12 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
   const load = () =>
     fetch(`/api/cursos?contrato=${currentContract}`)
       .then((r) => r.json())
-      .then(setCursos);
+      .then((data) => {
+        setCursos(data);
+        setKnownResponsaveis([...new Set(data.map((c: any) => c.responsavel).filter(Boolean))] as string[]);
+        setKnownFinalidades([...new Set(data.map((c: any) => c.finalidade).filter(Boolean))] as string[]);
+      });
+
   const loadResultados = () =>
     fetch(`/api/treinamentos/resultados?contrato=${currentContract}`)
       .then((r) => r.json())
@@ -81,7 +111,6 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
 
   useEffect(() => { load(); loadResultados(); }, [currentContract]);
 
-  // Capa handling (upload to Supabase Storage, no base64)
   const handleCapaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -140,7 +169,16 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
     setIsManageLoading(curso.id);
     try {
       setCreatedCursoId(curso.id);
-      setFormData({ nome: curso.nome, data_inicio: curso.data_inicio || new Date().toISOString().split("T")[0], data_fim: curso.data_fim || "", capa_url: curso.capa_url || "" });
+      setFormData({
+        nome: curso.nome,
+        data_inicio: curso.data_inicio || new Date().toISOString().split("T")[0],
+        data_fim: curso.data_fim || "",
+        capa_url: curso.capa_url || "",
+        tipo_conteudo: curso.tipo_conteudo || "",
+        responsavel: curso.responsavel || "",
+        finalidade: curso.finalidade || "",
+        assunto: curso.assunto || "",
+      });
       setCapaPreview(curso.capa_url || "");
       setCapaFile(null);
 
@@ -160,50 +198,24 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
     finally { setIsManageLoading(null); }
   };
 
-  // Add video (upload file OR YouTube link) – No base64
   const addVideo = async () => {
     if (!videoData.titulo) { alert("Insira um título para o vídeo."); return; }
+    if (!youtubeUrl) { alert("Insira a URL do YouTube."); return; }
     setIsVideoLoading(true);
     try {
-      let finalUrl = "";
-
-      if (videoSourceType === "youtube") {
-        const embed = getYoutubeEmbedUrl(youtubeUrl);
-        if (!embed) { alert("URL do YouTube inválida."); setIsVideoLoading(false); return; }
-        finalUrl = embed;
-      } else {
-        if (!pendingVideoFile) { alert("Selecione um arquivo de vídeo."); setIsVideoLoading(false); return; }
-        if (!supabaseClient) throw new Error("Supabase client não inicializado");
-
-        const file = pendingVideoFile;
-        const ext = file.name.split(".").pop() || "mp4";
-        const fileName = `video-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-        let bucket = "videos";
-        let { data: up, error: upErr } = await supabaseClient.storage.from(bucket).upload(fileName, file, { contentType: file.type });
-        if (upErr) {
-          bucket = "treinamentos";
-          ({ data: up, error: upErr } = await supabaseClient.storage.from(bucket).upload(fileName, file, { contentType: file.type }));
-        }
-        if (upErr) {
-          if (upErr.message.includes("Bucket not found")) throw new Error("Bucket 'videos' não encontrado. Crie-o no painel do Supabase > Storage.");
-          throw new Error(`Erro no upload: ${upErr.message}`);
-        }
-        const { data: { publicUrl } } = supabaseClient.storage.from(bucket).getPublicUrl(up.path);
-        finalUrl = publicUrl;
-      }
+      const embed = getYoutubeEmbedUrl(youtubeUrl);
+      if (!embed) { alert("URL do YouTube inválida."); return; }
 
       const res = await fetch(`/api/cursos/conteudo?contrato=${currentContract}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ curso_id: createdCursoId, titulo: videoData.titulo, url_video: finalUrl, ordem: conteudos.length + 1 }),
+        body: JSON.stringify({ curso_id: createdCursoId, titulo: videoData.titulo, url_video: embed, ordem: conteudos.length + 1 }),
       });
       if (res.ok) {
         const saved = await res.json();
-        setConteudos((prev) => [...prev, { titulo: videoData.titulo, url_video: finalUrl, id: saved.id || Date.now(), ordem: prev.length + 1 }]);
+        setConteudos((prev) => [...prev, { titulo: videoData.titulo, url_video: embed, id: saved.id || Date.now(), ordem: prev.length + 1 }]);
         setVideoData({ titulo: "", url_video: "" });
         setYoutubeUrl("");
-        setPendingVideoFile(null);
       } else {
         const d = await res.json();
         throw new Error(d.message || "Erro ao salvar no banco");
@@ -234,10 +246,76 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
 
   const closeModal = () => {
     setShowForm(false); setShowSuccess(false); setStep(1); setCreatedCursoId(null);
-    setFormData({ nome: "", data_inicio: new Date().toISOString().split("T")[0], data_fim: "", capa_url: "" });
+    setFormData({ nome: "", data_inicio: new Date().toISOString().split("T")[0], data_fim: "", capa_url: "", tipo_conteudo: "", responsavel: "", finalidade: "", assunto: "" });
     setCapaFile(null); setCapaPreview("");
     setConteudos([]); setQuestoes([]);
-    setVideoData({ titulo: "", url_video: "" }); setYoutubeUrl(""); setPendingVideoFile(null);
+    setVideoData({ titulo: "", url_video: "" }); setYoutubeUrl("");
+    setAddingResponsavel(false); setNewResponsavelInput("");
+    setAddingFinalidade(false); setNewFinalidadeInput("");
+  };
+
+  const openPresenca = async (curso: any) => {
+    setPresencaCurso(curso);
+    setPresencaParticipantes([]);
+    setIsPresencaLoading(true);
+    setShowPresenca(true);
+    try {
+      const res = await fetch(`/api/cursos/${curso.id}/participantes?contrato=${currentContract}`);
+      const data = await res.json();
+      setPresencaParticipantes(data);
+    } catch { alert("Erro ao carregar participantes."); }
+    finally { setIsPresencaLoading(false); }
+  };
+
+  const handlePrintPresenca = () => {
+    const win = window.open('', '_blank');
+    if (!win) return;
+    const dateStr = formatDatePtLong(presencaCurso?.data_inicio || '');
+    const rows = presencaParticipantes.map((p, i) => `
+      <tr>
+        <td style="text-align:center;border:1px solid #ddd;padding:7px 6px">${i + 1}</td>
+        <td style="border:1px solid #ddd;padding:7px 6px">${p.matricula || ''}</td>
+        <td style="border:1px solid #ddd;padding:7px 6px">${p.nome || ''}</td>
+        <td style="border:1px solid #ddd;padding:7px 6px">${p.cpf || ''}</td>
+        <td style="border:1px solid #ddd;padding:7px 6px">${p.cargo || ''}</td>
+        <td style="border:1px solid #ddd;padding:7px 6px;min-width:160px">&nbsp;</td>
+      </tr>`).join('');
+
+    win.document.write(`<!DOCTYPE html><html><head><title>Lista de Presença - ${presencaCurso?.nome || ''}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:Arial,sans-serif;font-size:11px;color:#000;padding:20px}
+      h1{color:#CC2222;font-size:17px;text-align:right;border-bottom:2px solid #CC2222;padding-bottom:5px;margin-bottom:12px;letter-spacing:1px}
+      .curso-nome{font-size:12px;font-weight:bold;margin-bottom:10px;color:#333}
+      .info-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #bbb;margin-bottom:14px}
+      .info-cell{padding:6px 10px;border-right:1px solid #bbb;border-bottom:1px solid #bbb}
+      .info-cell:nth-child(even){border-right:none}
+      .info-label{font-weight:bold;font-size:8px;text-transform:uppercase;color:#666;letter-spacing:.5px}
+      .info-value{font-size:11px;margin-top:2px}
+      table{width:100%;border-collapse:collapse}
+      thead th{background:#CC2222;color:#fff;padding:6px 8px;text-align:left;font-size:9px;text-transform:uppercase;border:1px solid #CC2222;letter-spacing:.5px}
+      tbody td{vertical-align:middle}
+      tbody tr:nth-child(even) td{background:#FFF5F5}
+    </style></head><body>
+    <h1>LISTA DE PRESENÇA</h1>
+    <div class="curso-nome">${presencaCurso?.nome || ''}</div>
+    <div class="info-grid">
+      <div class="info-cell"><div class="info-label">Data</div><div class="info-value">${dateStr}</div></div>
+      <div class="info-cell"><div class="info-label">Finalidade</div><div class="info-value">${presencaCurso?.finalidade || '-'}</div></div>
+      <div class="info-cell"><div class="info-label">Assunto</div><div class="info-value">${presencaCurso?.assunto || '-'}</div></div>
+      <div class="info-cell"><div class="info-label">Multiplicador</div><div class="info-value">${presencaCurso?.responsavel || '-'}</div></div>
+    </div>
+    <table><thead><tr>
+      <th style="width:40px;text-align:center">Nº</th>
+      <th style="width:100px">Matrícula</th>
+      <th>Nome</th>
+      <th style="width:130px">CPF</th>
+      <th style="width:150px">Função</th>
+      <th style="width:170px">Assinatura</th>
+    </tr></thead><tbody>${rows}</tbody></table>
+    </body></html>`);
+    win.document.close();
+    win.print();
   };
 
   const portalLink = `${window.location.origin}/?portal=true`;
@@ -245,6 +323,27 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
 
   const questoesByConteudo = (conteudoId: number | null) =>
     questoes.filter((q) => q.conteudo_id === conteudoId);
+
+  // ── Responsável dropdown helper ────────────────────────────────────────────────
+  const confirmNewResponsavel = () => {
+    const val = newResponsavelInput.trim();
+    if (val) {
+      setFormData((f) => ({ ...f, responsavel: val }));
+      setKnownResponsaveis((prev) => [...new Set([...prev, val])]);
+    }
+    setAddingResponsavel(false);
+    setNewResponsavelInput("");
+  };
+
+  const confirmNewFinalidade = () => {
+    const val = newFinalidadeInput.trim();
+    if (val) {
+      setFormData((f) => ({ ...f, finalidade: val }));
+      setKnownFinalidades((prev) => [...new Set([...prev, val])]);
+    }
+    setAddingFinalidade(false);
+    setNewFinalidadeInput("");
+  };
 
   return (
     <div className="p-6">
@@ -286,14 +385,22 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                 <div className="h-32 bg-slate-100 relative overflow-hidden border-b-2 border-slate-200">
                   {c.capa_url ? <img src={c.capa_url} alt={c.nome} className="w-full h-full object-cover" /> :
                     <div className="w-full h-full flex items-center justify-center text-slate-300"><ImageIcon className="w-8 h-8" /></div>}
+                  {c.tipo_conteudo && (
+                    <span className="absolute top-2 left-2 bg-wfs-accent text-white text-[9px] font-medium px-2 py-0.5 rounded tracking-wider">{c.tipo_conteudo}</span>
+                  )}
                 </div>
                 <div className="p-4 flex-1">
                   <h4 className="font-medium text-slate-800 mb-1">{c.nome}</h4>
+                  {c.assunto && <p className="text-[10px] text-slate-500 mb-1">{c.assunto}</p>}
                   <p className="text-[10px] text-slate-400 font-medium tracking-widest">
                     Disponível: {c.data_inicio ? new Date(c.data_inicio).toLocaleDateString() : "-"} até {c.data_fim ? new Date(c.data_fim).toLocaleDateString() : "-"}
                   </p>
                 </div>
-                <div className="px-4 py-3 border-t-2 border-slate-200 bg-slate-50 flex justify-end">
+                <div className="px-4 py-3 border-t-2 border-slate-200 bg-slate-50 flex justify-between items-center">
+                  <button onClick={() => openPresenca(c)}
+                    className="text-slate-400 text-[10px] font-medium hover:text-wfs-accent flex items-center gap-1 transition-colors">
+                    <FileText className="w-3.5 h-3.5" /> Lista de Presença
+                  </button>
                   <button onClick={() => manageContent(c)} disabled={isManageLoading === c.id}
                     className="text-wfs-accent text-[10px] font-medium hover:underline flex items-center gap-1 disabled:opacity-50">
                     {isManageLoading === c.id && <div className="w-3 h-3 border-2 border-wfs-accent/30 border-t-wfs-accent rounded-full animate-spin" />}
@@ -376,7 +483,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
         );
       })()}
 
-      {/* Modal */}
+      {/* ── Modal: Curso ── */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
@@ -413,7 +520,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                         <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleCapaFileChange} />
                       </div>
                     </div>
-                    <div className="md:col-span-2 space-y-6">
+                    <div className="md:col-span-2 space-y-4">
                       <div>
                         <label className="text-xs font-medium text-slate-500 mb-1 block">Nome do Curso</label>
                         <input className="input-field" placeholder="Ex: Integração de Novos Colaboradores"
@@ -431,8 +538,78 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                             onChange={(e) => setFormData({ ...formData, data_fim: e.target.value })} required />
                         </div>
                       </div>
+                      <div>
+                        <label className="text-xs font-medium text-slate-500 mb-1 block">Tipo de Conteúdo</label>
+                        <select className="input-field" value={formData.tipo_conteudo}
+                          onChange={(e) => setFormData({ ...formData, tipo_conteudo: e.target.value })}>
+                          <option value="">Selecionar tipo...</option>
+                          {TIPOS_CONTEUDO.map((t) => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Assunto */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 mb-1 block">Assunto do Treinamento</label>
+                    <input className="input-field" placeholder="Ex: Integração, NR-35, Combate a Incêndio..."
+                      value={formData.assunto} onChange={(e) => setFormData({ ...formData, assunto: e.target.value })} />
+                  </div>
+
+                  {/* Responsável */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 mb-1 block">Responsável (Multiplicador)</label>
+                    {addingResponsavel ? (
+                      <div className="flex gap-2">
+                        <input className="input-field flex-1" placeholder="Nome do responsável"
+                          value={newResponsavelInput} onChange={(e) => setNewResponsavelInput(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), confirmNewResponsavel())} autoFocus />
+                        <button type="button" onClick={confirmNewResponsavel}
+                          className="px-3 py-2 bg-wfs-accent text-white text-xs rounded hover:bg-red-700 transition-colors">OK</button>
+                        <button type="button" onClick={() => { setAddingResponsavel(false); setNewResponsavelInput(""); }}
+                          className="px-3 py-2 bg-slate-100 text-slate-600 text-xs rounded hover:bg-slate-200 transition-colors">Cancelar</button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <select className="input-field flex-1" value={formData.responsavel}
+                          onChange={(e) => {
+                            if (e.target.value === "__add__") { setAddingResponsavel(true); }
+                            else { setFormData({ ...formData, responsavel: e.target.value }); }
+                          }}>
+                          <option value="">Selecionar responsável...</option>
+                          {knownResponsaveis.map((r) => <option key={r} value={r}>{r}</option>)}
+                          <option value="__add__">+ Cadastrar novo responsável...</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Finalidade */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 mb-1 block">Finalidade</label>
+                    {addingFinalidade ? (
+                      <div className="flex gap-2">
+                        <input className="input-field flex-1" placeholder="Ex: Treinamento, Reciclagem, Integração..."
+                          value={newFinalidadeInput} onChange={(e) => setNewFinalidadeInput(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), confirmNewFinalidade())} autoFocus />
+                        <button type="button" onClick={confirmNewFinalidade}
+                          className="px-3 py-2 bg-wfs-accent text-white text-xs rounded hover:bg-red-700 transition-colors">OK</button>
+                        <button type="button" onClick={() => { setAddingFinalidade(false); setNewFinalidadeInput(""); }}
+                          className="px-3 py-2 bg-slate-100 text-slate-600 text-xs rounded hover:bg-slate-200 transition-colors">Cancelar</button>
+                      </div>
+                    ) : (
+                      <select className="input-field" value={formData.finalidade}
+                        onChange={(e) => {
+                          if (e.target.value === "__add__") { setAddingFinalidade(true); }
+                          else { setFormData({ ...formData, finalidade: e.target.value }); }
+                        }}>
+                        <option value="">Selecionar finalidade...</option>
+                        {knownFinalidades.map((f) => <option key={f} value={f}>{f}</option>)}
+                        <option value="__add__">+ Cadastrar nova finalidade...</option>
+                      </select>
+                    )}
+                  </div>
+
                   <div className="flex justify-end gap-3 pt-4 border-t">
                     <button type="button" onClick={closeModal} className="px-4 py-2 text-slate-500 font-medium text-xs hover:text-slate-700 transition-colors">Cancelar</button>
                     <button type="submit" className="btn-primary flex items-center gap-2">
@@ -442,26 +619,12 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                 </form>
 
               ) : (
-                /* Step 2: Content & Questions (Interleaved) */
+                /* Step 2: Content & Questions */
                 <div className="space-y-8">
-
-                  {/* Add Video Section */}
                   <section className="space-y-4">
                     <h4 className="text-sm font-medium text-slate-800 flex items-center gap-2 border-b pb-2">
-                      <Video className="w-4 h-4 text-wfs-accent" /> Adicionar Vídeo
+                      <Youtube className="w-4 h-4 text-red-500" /> Adicionar Vídeo do YouTube
                     </h4>
-
-                    {/* Source type toggle */}
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => setVideoSourceType("upload")}
-                        className={`flex items-center gap-2 px-4 py-2 text-xs font-medium rounded border-2 transition-all ${videoSourceType === "upload" ? "border-wfs-accent text-wfs-accent bg-red-50" : "border-slate-200 text-slate-400 hover:border-slate-300"}`}>
-                        <Upload className="w-3.5 h-3.5" /> Upload do Dispositivo
-                      </button>
-                      <button type="button" onClick={() => setVideoSourceType("youtube")}
-                        className={`flex items-center gap-2 px-4 py-2 text-xs font-medium rounded border-2 transition-all ${videoSourceType === "youtube" ? "border-wfs-accent text-wfs-accent bg-red-50" : "border-slate-200 text-slate-400 hover:border-slate-300"}`}>
-                        <Youtube className="w-3.5 h-3.5" /> Link do YouTube
-                      </button>
-                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
                       <div>
@@ -470,39 +633,20 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                           value={videoData.titulo} onChange={(e) => setVideoData({ ...videoData, titulo: e.target.value })} />
                       </div>
                       <div className="flex gap-2 items-end">
-                        {videoSourceType === "upload" ? (
-                          <div className="flex-1 relative">
-                            <label className="text-[10px] font-medium text-slate-400 block mb-1">Arquivo de Vídeo</label>
-                            <div className="relative h-10 border rounded-lg bg-white flex items-center px-3 cursor-pointer hover:border-wfs-accent transition-all">
-                              <Video className="w-4 h-4 text-slate-400 mr-2" />
-                              <span className="text-xs text-slate-500 truncate">{pendingVideoFile ? pendingVideoFile.name : "Selecionar vídeo..."}</span>
-                              <input type="file" accept="video/*" className="absolute inset-0 opacity-0 cursor-pointer"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  if (!videoData.titulo) setVideoData((prev) => ({ ...prev, titulo: file.name.split(".").slice(0, -1).join(".") }));
-                                  setPendingVideoFile(file);
-                                  setVideoData((prev) => ({ ...prev, url_video: URL.createObjectURL(file) }));
-                                }} />
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex-1">
-                            <label className="text-[10px] font-medium text-slate-400 block mb-1">URL do YouTube</label>
-                            <input placeholder="https://youtube.com/watch?v=..." className="input-field text-sm"
-                              value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} />
-                          </div>
-                        )}
+                        <div className="flex-1">
+                          <label className="text-[10px] font-medium text-slate-400 block mb-1">URL do YouTube</label>
+                          <input placeholder="https://youtube.com/watch?v=..." className="input-field text-sm"
+                            value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} />
+                        </div>
                         <button type="button" onClick={addVideo} disabled={isVideoLoading}
                           className="btn-primary h-10 px-4 flex items-center gap-2 disabled:opacity-50 self-end">
                           {isVideoLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus className="w-5 h-5" />}
-                          <span className="text-xs font-medium">{isVideoLoading ? "Enviando..." : "Adicionar"}</span>
+                          <span className="text-xs font-medium">{isVideoLoading ? "Salvando..." : "Adicionar"}</span>
                         </button>
                       </div>
                     </div>
                   </section>
 
-                  {/* Interleaved Content List */}
                   {conteudos.length > 0 && (
                     <section className="space-y-3">
                       <h4 className="text-sm font-medium text-slate-800 flex items-center gap-2 border-b pb-2">
@@ -514,18 +658,15 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                         const linked = questoesByConteudo(v.id);
                         return (
                           <div key={v.id} className="border-2 border-slate-200 rounded-lg overflow-hidden">
-                            {/* Video row */}
                             <div className="flex items-center justify-between p-3 bg-slate-50">
                               <div className="flex items-center gap-3">
                                 <span className="text-[10px] font-medium text-slate-400 bg-white w-6 h-6 flex items-center justify-center rounded-full border border-slate-200">{i + 1}</span>
-                                {isYoutubeUrl(v.url_video) ? <Youtube className="w-4 h-4 text-red-500" /> : <Video className="w-4 h-4 text-slate-400" />}
+                                <Youtube className="w-4 h-4 text-red-500" />
                                 <span className="text-sm font-medium text-slate-700">{v.titulo}</span>
-                                {isYoutubeUrl(v.url_video) && <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">YouTube</span>}
+                                <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">YouTube</span>
                               </div>
                               <button type="button" onClick={() => deleteVideo(v.id)} className="text-slate-400 hover:text-wfs-accent transition-colors"><Trash2 className="w-4 h-4" /></button>
                             </div>
-
-                            {/* Questions linked to this video */}
                             <div className="p-3 bg-white border-t border-slate-100 space-y-2">
                               {linked.length > 0 && (
                                 <div className="space-y-1 mb-2">
@@ -540,10 +681,8 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                                   ))}
                                 </div>
                               )}
-                              <AddQuestionInline
-                                conteudoId={v.id}
-                                onAdd={(q) => setQuestoes((prev) => [...prev, { ...q, id: Date.now(), conteudo_id: v.id }])}
-                              />
+                              <AddQuestionInline conteudoId={v.id}
+                                onAdd={(q) => setQuestoes((prev) => [...prev, { ...q, id: Date.now(), conteudo_id: v.id }])} />
                             </div>
                           </div>
                         );
@@ -551,7 +690,6 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                     </section>
                   )}
 
-                  {/* Evaluation Settings */}
                   <section className="space-y-4">
                     <h4 className="text-sm font-medium text-slate-800 flex items-center gap-2 border-b pb-2">
                       <ClipboardList className="w-4 h-4 text-wfs-accent" /> Configurações da Avaliação
@@ -570,7 +708,7 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
                     </div>
                     <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
                       <p className="text-[11px] text-blue-700 font-medium">
-                        ℹ️ A nota final é calculada com base em <strong>todas</strong> as atividades respondidas ao longo do curso (cada questão tem peso igual). Bloqueios, reinicialização por saída de tela e limite de tentativas são mantidos.
+                        ℹ️ A nota final é calculada com base em <strong>todas</strong> as atividades respondidas ao longo do curso (cada questão tem peso igual).
                       </p>
                     </div>
                   </section>
@@ -587,11 +725,97 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
           </motion.div>
         </div>
       )}
+
+      {/* ── Modal: Lista de Presença ── */}
+      {showPresenca && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col" style={{ maxHeight: '90vh' }}>
+            <div className="bg-wfs-text p-4 text-white flex justify-between items-center shrink-0">
+              <h3 className="text-lg font-medium tracking-tight flex items-center gap-2">
+                <FileText className="w-5 h-5" /> Lista de Presença
+              </h3>
+              <button onClick={() => setShowPresenca(false)} className="hover:bg-white/10 p-1 rounded transition-colors"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              {/* Header info */}
+              <div className="border border-wfs-accent/30 rounded-lg overflow-hidden mb-6">
+                <div className="bg-wfs-accent px-4 py-2">
+                  <h4 className="text-white text-sm font-medium tracking-widest">LISTA DE PRESENÇA</h4>
+                </div>
+                <div className="grid grid-cols-2 divide-x divide-slate-200">
+                  {[
+                    { label: "DATA", value: formatDatePtLong(presencaCurso?.data_inicio) },
+                    { label: "FINALIDADE", value: presencaCurso?.finalidade || '-' },
+                    { label: "ASSUNTO", value: presencaCurso?.assunto || '-' },
+                    { label: "MULTIPLICADOR", value: presencaCurso?.responsavel || '-' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="p-3 border-b border-slate-200">
+                      <p className="text-[9px] font-bold text-slate-500 tracking-widest">{label}</p>
+                      <p className="text-sm font-medium text-slate-800 mt-0.5">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Participants table */}
+              {isPresencaLoading ? (
+                <div className="text-center py-12 text-slate-400">
+                  <div className="w-8 h-8 border-2 border-slate-200 border-t-wfs-accent rounded-full animate-spin mx-auto mb-3" />
+                  <p className="text-sm">Carregando participantes...</p>
+                </div>
+              ) : presencaParticipantes.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                  <p className="text-sm">Nenhum colaborador realizou este treinamento ainda.</p>
+                </div>
+              ) : (
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-wfs-accent">
+                        {["Nº", "Matrícula", "Nome", "CPF", "Função", "Assinatura"].map((h) => (
+                          <th key={h} className="px-3 py-2 text-[9px] font-bold text-white tracking-widest uppercase">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {presencaParticipantes.map((p, i) => (
+                        <tr key={p.funcionario_id} className={i % 2 === 1 ? "bg-red-50/40" : ""}>
+                          <td className="px-3 py-2.5 text-xs text-center font-medium text-slate-600">{i + 1}</td>
+                          <td className="px-3 py-2.5 text-xs text-slate-700 font-mono">{p.matricula}</td>
+                          <td className="px-3 py-2.5 text-xs text-slate-800 font-medium">{p.nome}</td>
+                          <td className="px-3 py-2.5 text-xs text-slate-600">{p.cpf || '-'}</td>
+                          <td className="px-3 py-2.5 text-xs text-slate-600">{p.cargo || '-'}</td>
+                          <td className="px-3 py-2.5 text-xs text-slate-300 min-w-[160px]">_______________</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+              <p className="text-[10px] text-slate-400">{presencaParticipantes.length} colaborador(es) · ordenado por nome</p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowPresenca(false)}
+                  className="px-4 py-2 text-slate-500 font-medium text-xs hover:text-slate-700 transition-colors">Fechar</button>
+                <button onClick={handlePrintPresenca} disabled={presencaParticipantes.length === 0}
+                  className="btn-primary flex items-center gap-2 disabled:opacity-50">
+                  <Printer className="w-4 h-4" /> Imprimir Lista
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
 
-// Inline Question Adder component
+// ── Inline Question Adder ──────────────────────────────────────────────────────
+
 const AddQuestionInline = ({ conteudoId, onAdd }: { conteudoId: number; onAdd: (q: any) => void }) => {
   const [open, setOpen] = useState(false);
   const [enunciado, setEnunciado] = useState("");

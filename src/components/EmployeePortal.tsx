@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronRight, Video, ClipboardList, ArrowLeft, CheckCircle,
-  AlertCircle, Lock, LogOut, Youtube, PlayCircle
+  AlertCircle, Lock, LogOut, Maximize2, Play
 } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -23,18 +23,16 @@ interface Questao { id: number; enunciado: string; opcoes: Opcao[]; conteudo_id?
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
-  const [step, setStep] = useState(1); // 1=login, 2=courses, 3=course content, 4=result
+  const [step, setStep] = useState(1);
   const [matricula, setMatricula] = useState("");
+  const [turno, setTurno] = useState("");
   const [employee, setEmployee] = useState<any>(null);
   const [cursos, setCursos] = useState<any[]>([]);
-  const [employeeResults, setEmployeeResults] = useState<any[]>([]);
   const [selectedCurso, setSelectedCurso] = useState<any>(null);
-  const [content, setContent] = useState<any>(null); // { conteudos, avaliacao, questoes }
+  const [content, setContent] = useState<any>(null);
   const [result, setResult] = useState<any>(null);
 
-  // Interleaved flow state
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
-  // items = array of { type: 'video' | 'question', data, videoId? }
   const [items, setItems] = useState<any[]>([]);
   const [watchedCurrent, setWatchedCurrent] = useState(false);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -45,19 +43,18 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [isCursoLoading, setIsCursoLoading] = useState(false);
 
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-
   // ── Logout ────────────────────────────────────────────────────────────────────
   const handleLogout = () => {
-    setEmployee(null); setStep(1); setMatricula("");
+    setEmployee(null); setStep(1); setMatricula(""); setTurno("");
     setSelectedCurso(null); setContent(null); setResult(null);
     setItems([]); setAnswers({}); setCurrentItemIndex(0);
   };
 
-  // ── Login ────────────────────────────────────────────────────────────────────
+  // ── Login ─────────────────────────────────────────────────────────────────────
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!matricula) return;
+    if (!turno) { alert("Selecione seu turno para continuar."); return; }
     setIsLoginLoading(true);
     try {
       const res = await fetch("/api/funcionarios/matricula/" + matricula);
@@ -71,7 +68,6 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
         ]);
         const rdata = await rres.json();
         const cdata = await cres.json();
-        setEmployeeResults(rdata);
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const processed = cdata.map((c: any) => {
           const startDate = c.data_inicio ? new Date(c.data_inicio) : null;
@@ -108,7 +104,6 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
       const data = await res.json();
       setContent(data);
 
-      // Build interleaved item list: for each video, add it, then add any questions linked to it
       const built: any[] = [];
       const conteudos: Conteudo[] = data.conteudos || [];
       const questoes: Questao[] = data.questoes || [];
@@ -119,15 +114,13 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
         const linked = questoes.filter((q) => q.conteudo_id === v.id);
         linked.forEach((q) => built.push({ type: "question", data: q, videoId: v.id }));
       });
-
-      // Questions not linked to any specific video go at the end
       const unlinked = questoes.filter((q) => !q.conteudo_id);
       unlinked.forEach((q) => built.push({ type: "question", data: q, videoId: null }));
 
       setItems(built);
       setCurrentItemIndex(0);
       setAnswers({});
-      setWatchedCurrent(isReturning); // if returning, skip video watch requirement
+      setWatchedCurrent(isReturning);
       setActivityAnswered(false);
       setSelectedOption(null);
       setStep(3);
@@ -135,7 +128,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
     finally { setIsCursoLoading(false); }
   };
 
-  // ── Visibility change: reset course if user leaves screen ────────────────────
+  // ── Visibility change guard ───────────────────────────────────────────────────
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && step === 3) {
@@ -152,9 +145,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   // ── Current item helpers ──────────────────────────────────────────────────────
   const currentItem = items[currentItemIndex];
   const isLastItem = currentItemIndex === items.length - 1;
-  const totalQuestions = items.filter((i) => i.type === "question").length;
-  const answeredCount = Object.keys(answers).length;
-  const progressPct = items.length > 0 ? ((currentItemIndex) / items.length) * 100 : 0;
+  const progressPct = items.length > 0 ? (currentItemIndex / items.length) * 100 : 0;
 
   const canAdvance = () => {
     if (!currentItem) return false;
@@ -163,10 +154,8 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
     return false;
   };
 
-  const handleVideoEnded = () => setWatchedCurrent(true);
-
   const handleSelectOption = (questionId: number, optionId: number) => {
-    if (activityAnswered) return; // already answered
+    if (activityAnswered) return;
     setSelectedOption(optionId);
     setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
     setActivityAnswered(true);
@@ -175,7 +164,6 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   const advance = () => {
     if (!canAdvance()) return;
     if (isLastItem) {
-      // All done — submit
       submitExam();
     } else {
       setCurrentItemIndex((i) => i + 1);
@@ -196,15 +184,15 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           const correctOpt = q.opcoes.find((o) => o.correta === true || o.correta === 1);
           if (correctOpt && answers[q.id] === correctOpt.id) score += 100 / questoes.length;
         });
-      } else { score = 100; } // no questions = full score
+      } else { score = 100; }
 
       const res = await fetch("/api/treinamentos/responder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ funcionario_id: employee.id, curso_id: selectedCurso.id, nota: score }),
+        body: JSON.stringify({ funcionario_id: employee.id, curso_id: selectedCurso.id, nota: score, turno }),
       });
       const data = await res.json();
-      setResult({ score, status: data.status, questoes: content?.questoes || [] });
+      setResult({ score, status: data.status });
 
       setCursos((prev) => prev.map((c) => {
         if (c.id !== selectedCurso.id) return c;
@@ -238,7 +226,10 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           </div>
           {employee && (
             <div className="flex items-center gap-4">
-              <div className="text-right"><p className="text-xs font-medium">{employee.nome}</p><p className="text-[9px] opacity-60">{employee.matricula}</p></div>
+              <div className="text-right">
+                <p className="text-xs font-medium">{employee.nome}</p>
+                <p className="text-[9px] opacity-60">{employee.matricula} · {turno}</p>
+              </div>
               <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-full transition-all"><LogOut className="w-5 h-5" /></button>
             </div>
           )}
@@ -250,13 +241,28 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           {step === 1 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-sm mx-auto space-y-6 bg-white p-8 rounded-2xl shadow-xl mt-20">
               <h2 className="text-xl font-medium text-center text-slate-800">Acesse seus Treinamentos</h2>
-              <form onSubmit={handleLogin} className="space-y-6">
+              <form onSubmit={handleLogin} className="space-y-5">
                 <div>
-                  <label className="text-xs font-medium text-slate-500">Matrícula</label>
+                  <label className="text-xs font-medium text-slate-500 block mb-1">Matrícula</label>
                   <input className="input-field text-center text-xl font-mono" value={matricula}
                     onChange={(e) => setMatricula(e.target.value)} placeholder="000000" required autoFocus />
                 </div>
-                <button type="submit" disabled={isLoginLoading} className="btn-primary w-full py-4 font-medium tracking-widest disabled:opacity-50">
+                <div>
+                  <label className="text-xs font-medium text-slate-500 block mb-1">Turno <span className="text-wfs-accent">*</span></label>
+                  <select
+                    className="input-field"
+                    value={turno}
+                    onChange={(e) => setTurno(e.target.value)}
+                    required
+                  >
+                    <option value="">Selecione seu turno...</option>
+                    <option value="1° Turno">1° Turno</option>
+                    <option value="2° Turno">2° Turno</option>
+                    <option value="3° Turno">3° Turno</option>
+                  </select>
+                </div>
+                <button type="submit" disabled={isLoginLoading || !turno || !matricula}
+                  className="btn-primary w-full py-4 font-medium tracking-widest disabled:opacity-50">
                   {isLoginLoading ? "Acessando..." : "Entrar no Portal"}
                 </button>
               </form>
@@ -308,7 +314,6 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           {/* ── Step 3: Interleaved Course Flow ── */}
           {step === 3 && currentItem && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto w-full space-y-6">
-              {/* Back + progress */}
               <div className="flex items-center justify-between">
                 <button onClick={() => setStep(2)} className="flex items-center gap-2 text-slate-400 hover:text-slate-600 text-xs font-medium">
                   <ArrowLeft className="w-4 h-4" /> Voltar
@@ -326,11 +331,8 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
               <h2 className="text-2xl font-medium text-wfs-text">{selectedCurso?.nome}</h2>
 
-              {/* Step indicator */}
               <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium tracking-widest">
-                <span className="bg-slate-100 px-2 py-1 rounded">
-                  {currentItemIndex + 1} / {items.length}
-                </span>
+                <span className="bg-slate-100 px-2 py-1 rounded">{currentItemIndex + 1} / {items.length}</span>
                 <span>{currentItem.type === "video" ? "📹 VÍDEO" : "📝 ATIVIDADE"}</span>
               </div>
 
@@ -348,14 +350,9 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
 
                   <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
                     {isYoutubeUrl(currentItem.data.url_video) ? (
-                      // YouTube embed — use postMessage to detect end
                       <YoutubePlayer src={currentItem.data.url_video} onEnded={() => setWatchedCurrent(true)} />
                     ) : (
-                      <video ref={videoRef} key={currentItem.data.id} src={currentItem.data.url_video} controls
-                        className="w-full h-full object-contain" controlsList="nodownload" playsInline preload="auto"
-                        onEnded={handleVideoEnded}>
-                        Seu navegador não suporta a tag de vídeo.
-                      </video>
+                      <RestrictedVideoPlayer src={currentItem.data.url_video} onEnded={() => setWatchedCurrent(true)} />
                     )}
                   </div>
 
@@ -383,26 +380,16 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                   <div className="space-y-2">
                     {currentItem.data.opcoes.map((opt: Opcao) => {
                       const isSelected = selectedOption === opt.id;
-                      const correctId = activityAnswered
-                        ? currentItem.data.opcoes.find((o: Opcao) => o.correta === true || o.correta === 1)?.id
-                        : null;
-                      const isCorrect = opt.id === correctId;
-                      const isWrong = isSelected && !isCorrect && activityAnswered;
-
                       return (
                         <label key={opt.id}
                           className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all select-none
                             ${activityAnswered
-                              ? isCorrect ? "border-green-400 bg-green-50"
-                              : isWrong ? "border-red-300 bg-red-50"
-                              : "opacity-60 border-slate-200"
-                              : isSelected ? "border-wfs-accent bg-red-50"
-                              : "hover:bg-slate-50 border-slate-200"}`}>
+                              ? isSelected ? "border-wfs-accent bg-red-50 font-medium" : "opacity-50 border-slate-200"
+                              : isSelected ? "border-wfs-accent bg-red-50" : "hover:bg-slate-50 border-slate-200"}`}>
                           <input type="radio" name={`q-${currentItem.data.id}`} checked={isSelected}
                             onChange={() => !activityAnswered && handleSelectOption(currentItem.data.id, opt.id)}
                             className="accent-wfs-accent" />
                           <span className="text-sm">{opt.texto}</span>
-                          {activityAnswered && isCorrect && <CheckCircle className="w-4 h-4 text-green-500 ml-auto shrink-0" />}
                         </label>
                       );
                     })}
@@ -432,7 +419,6 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="max-w-2xl mx-auto py-12 px-8 bg-white border border-slate-200 shadow-sm rounded-lg">
 
-                {/* Header */}
                 <div className="text-center space-y-4 mb-8">
                   <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto border ${isApproved ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-wfs-accent border-red-100"}`}>
                     {isApproved ? <CheckCircle className="w-8 h-8" /> : <AlertCircle className="w-8 h-8" />}
@@ -452,7 +438,6 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                   )}
                 </div>
 
-                {/* Score */}
                 <div className="py-8 border-y border-slate-100 flex flex-col items-center mb-8">
                   <span className="text-[10px] font-medium text-slate-400 tracking-[0.2em] mb-2">Pontuação Final</span>
                   <span className="text-7xl font-mono font-light text-slate-900 tracking-tighter">
@@ -460,41 +445,6 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                   </span>
                 </div>
 
-                {/* Gabarito — SOMENTE ao aprovar */}
-                {isApproved && result.questoes && result.questoes.length > 0 && (
-                  <div className="mb-8 space-y-4">
-                    <h3 className="text-sm font-medium text-slate-700 flex items-center gap-2 border-b pb-2">
-                      <CheckCircle className="w-4 h-4 text-green-500" /> Gabarito
-                    </h3>
-                    {result.questoes.map((q: Questao, i: number) => {
-                      const correctOpt = q.opcoes.find((o) => o.correta === true || o.correta === 1);
-                      const chosenId = answers[q.id];
-                      const wasCorrect = chosenId === correctOpt?.id;
-                      return (
-                        <div key={q.id} className="border border-slate-200 rounded-lg p-4 space-y-2">
-                          <p className="text-sm font-medium text-slate-800">{i + 1}. {q.enunciado}</p>
-                          <div className="space-y-1">
-                            {q.opcoes.map((opt) => {
-                              const isCorrect = opt.id === correctOpt?.id;
-                              const isChosen = opt.id === chosenId;
-                              return (
-                                <div key={opt.id}
-                                  className={`flex items-center gap-2 text-xs px-3 py-2 rounded ${isCorrect ? "bg-green-100 text-green-800 font-medium" : isChosen && !isCorrect ? "bg-red-100 text-red-700" : "text-slate-500"}`}>
-                                  {isCorrect ? <CheckCircle className="w-3.5 h-3.5 shrink-0" /> : <span className="w-3.5 h-3.5 shrink-0" />}
-                                  {opt.texto}
-                                  {isChosen && !isCorrect && <span className="ml-auto text-[10px] text-red-500">(sua resposta)</span>}
-                                  {isCorrect && <span className="ml-auto text-[10px] text-green-600">✓ correta</span>}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Actions */}
                 <div className="flex flex-col items-center gap-4">
                   {!isApproved && canRetry ? (
                     <button onClick={() => startCurso(selectedCurso)}
@@ -519,19 +469,25 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   );
 };
 
-// ── YouTube Player with ended detection ───────────────────────────────────────
+// ── YouTube Player — controles restritos, apenas tela cheia customizada ────────
+
 const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) => {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const endedRef = useRef(false);
 
-  // Build embed URL with API enabled and autoplay=0
   const embedSrc = (() => {
     try {
       const u = new URL(src);
-      // Already an embed URL
       if (u.pathname.startsWith("/embed/")) {
         u.searchParams.set("enablejsapi", "1");
         u.searchParams.set("origin", window.location.origin);
+        u.searchParams.set("controls", "0");
+        u.searchParams.set("disablekb", "1");
+        u.searchParams.set("modestbranding", "1");
+        u.searchParams.set("rel", "0");
+        u.searchParams.set("iv_load_policy", "3");
+        u.searchParams.set("fs", "0");
         return u.toString();
       }
     } catch {}
@@ -542,7 +498,6 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
     const handler = (e: MessageEvent) => {
       try {
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-        // YT player state: 0 = ended
         if (data?.event === "onStateChange" && data?.info === 0 && !endedRef.current) {
           endedRef.current = true;
           onEnded();
@@ -553,16 +508,79 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
     return () => window.removeEventListener("message", handler);
   }, [onEnded]);
 
+  const handleFullscreen = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) document.exitFullscreen();
+    else el.requestFullscreen?.();
+  };
+
   return (
-    <div className="relative w-full h-full">
-      <iframe ref={iframeRef} src={embedSrc} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen className="w-full h-full" title="YouTube video" />
-      {/* Manual "mark as watched" button as fallback */}
+    <div ref={containerRef} className="relative w-full h-full">
+      <iframe
+        ref={iframeRef}
+        src={embedSrc}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full h-full"
+        title="YouTube video"
+      />
       <button
-        onClick={() => { if (!endedRef.current) { endedRef.current = true; onEnded(); } }}
+        onClick={handleFullscreen}
         className="absolute bottom-3 right-3 bg-black/70 text-white text-[10px] px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-black transition-colors"
-        title="Marcar como assistido">
-        <CheckCircle className="w-3 h-3" /> Marcar como assistido
+        title="Tela cheia"
+      >
+        <Maximize2 className="w-3 h-3" /> Tela cheia
+      </button>
+    </div>
+  );
+};
+
+// ── Native Video Player — sem controles, apenas play/pause e tela cheia ───────
+
+const RestrictedVideoPlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [playing, setPlaying] = useState(false);
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) { v.play(); setPlaying(true); }
+    else { v.pause(); setPlaying(false); }
+  };
+
+  const handleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const el = containerRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) document.exitFullscreen();
+    else el.requestFullscreen?.();
+  };
+
+  return (
+    <div ref={containerRef} className="relative w-full h-full bg-black cursor-pointer" onClick={togglePlay}>
+      <video
+        ref={videoRef}
+        src={src}
+        className="w-full h-full object-contain"
+        onEnded={() => { setPlaying(false); onEnded(); }}
+        playsInline
+        preload="auto"
+      />
+      {!playing && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="bg-black/60 rounded-full p-4">
+            <Play className="w-12 h-12 text-white fill-white" />
+          </div>
+        </div>
+      )}
+      <button
+        onClick={handleFullscreen}
+        className="absolute bottom-3 right-3 bg-black/70 text-white text-[10px] px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-black transition-colors"
+        title="Tela cheia"
+      >
+        <Maximize2 className="w-3 h-3" /> Tela cheia
       </button>
     </div>
   );
