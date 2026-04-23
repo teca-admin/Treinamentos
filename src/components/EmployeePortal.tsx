@@ -887,14 +887,20 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
         onLoad={handleIframeLoad}
       />
 
-      {/* ── Overlay bloqueando end-screen e canto inferior esquerdo (ícone de link) ── */}
-      {/* Cobre a faixa inferior onde ficam "Mais vídeos" e ícone de link */}
-      <div className="absolute bottom-0 left-0 right-0 h-[15%] bg-black pointer-events-none" />
-      {/* Cobre o canto inferior esquerdo especificamente */}
-      <div className="absolute bottom-0 left-0 w-[12%] h-[20%] bg-black pointer-events-none" />
+      {/* ══ OVERLAYS — escondem elementos nativos do YouTube ══════════════════ */}
 
-      {/* ── HUD: tempo restante + velocidade + tela cheia ── */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 py-2 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+      {/* TOPO: cobre título do vídeo + ícones de volume/CC/configurações */}
+      <div className="absolute top-0 left-0 right-0 h-[18%] bg-black pointer-events-none" />
+
+      {/* MEIO-INFERIOR: cobre a barra de progresso nativa (tempo + seek + botão minimizar) */}
+      {/* Essa faixa fica logo acima do rodapé, cobrindo os controles nativos do YouTube */}
+      <div className="absolute bottom-[38px] left-0 right-0 h-[14%] bg-black pointer-events-none" />
+
+      {/* CANTO INFERIOR DIREITO: cobre botão de minimizar/redimensionar nativo */}
+      <div className="absolute bottom-[38px] right-0 w-[10%] h-[10%] bg-black pointer-events-none" />
+
+      {/* ── HUD: tempo restante + velocidade + tela cheia (altura fixa 38px) ── */}
+      <div className="absolute bottom-0 left-0 right-0 h-[38px] flex items-center justify-between px-3 bg-black pointer-events-none">
 
         {/* Tempo restante */}
         <div className="flex items-center gap-1.5 pointer-events-none">

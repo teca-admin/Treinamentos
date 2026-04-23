@@ -196,6 +196,37 @@ app.delete("/api/cursos/conteudo/:id", async (req, res) => {
   res.json({ success: !error });
 });
 
+// Atualiza título e/ou URL de um vídeo
+app.put("/api/cursos/conteudo/:id", async (req, res) => {
+  const { titulo, url_video } = req.body;
+  const fields: any = {};
+  if (titulo !== undefined) fields.titulo = titulo;
+  if (url_video !== undefined) fields.url_video = url_video;
+
+  let { error } = await supabase.from("cursos_conteudos").update(fields).eq("id", req.params.id);
+  if (error && error.code === '42P01') {
+    const result = await supabase.from("treinamento_conteudos").update(fields).eq("id", req.params.id);
+    error = result.error;
+  }
+  res.json({ success: !error, message: error?.message });
+});
+
+// Reordena vídeos: recebe array de { id, ordem }
+app.put("/api/cursos/conteudo/reorder", async (req, res) => {
+  const { items } = req.body; // [{ id: number, ordem: number }, ...]
+  try {
+    for (const item of items) {
+      let { error } = await supabase.from("cursos_conteudos").update({ ordem: item.ordem }).eq("id", item.id);
+      if (error && error.code === '42P01') {
+        await supabase.from("treinamento_conteudos").update({ ordem: item.ordem }).eq("id", item.id);
+      }
+    }
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(400).json({ success: false, message: e.message });
+  }
+});
+
 app.post("/api/cursos/avaliacao", async (req, res) => {
   const { curso_id, nota_minima, tentativas_maximas, questoes } = req.body;
   try {

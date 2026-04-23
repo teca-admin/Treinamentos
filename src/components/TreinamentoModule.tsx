@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Video, ClipboardList, Trash2, Save, CheckCircle, X, Image as ImageIcon, Link as LinkIcon, Copy, Search, Filter, Youtube, ChevronDown, ChevronUp, FileText, Printer, Pencil } from "lucide-react";
+import { Plus, Video, ClipboardList, Trash2, Save, CheckCircle, X, Image as ImageIcon, Link as LinkIcon, Copy, Search, Filter, Youtube, ChevronDown, ChevronUp, FileText, Printer, Pencil, GripVertical, Link2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { User, Contract } from "../types";
 import { getSupabaseClient } from "../lib/supabase";
@@ -100,6 +100,15 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [conteudos, setConteudos] = useState<Conteudo[]>([]);
+
+  // Drag-and-drop reorder state
+  const dragIndexRef = React.useRef<number | null>(null);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dragOverId, setDragOverId] = useState<number | null>(null);
+
+  // Edição inline de URL/título de vídeo
+  const [editingVideoId, setEditingVideoId] = useState<number | null>(null);
+  const [editingVideoUrl, setEditingVideoUrl] = useState("");
 
   // Evaluation state
   const [avaliacaoData, setAvaliacaoData] = useState({ nota_minima: 70, tentativas_maximas: 3 });
@@ -253,6 +262,58 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
     setQuestoes((qs) => qs.filter((q) => q.conteudo_id !== id));
     const res = await fetch(`/api/cursos/conteudo/${id}?contrato=${currentContract}`, { method: "DELETE" });
     if (!res.ok) setConteudos(prev);
+  };
+
+  // ── Drag-and-drop reorder ─────────────────────────────────────────────────────
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    dragIndexRef.current = index;
+    setDraggingId(conteudos[index].id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverId(id);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    const fromIndex = dragIndexRef.current;
+    if (fromIndex === null || fromIndex === targetIndex) {
+      setDraggingId(null); setDragOverId(null); return;
+    }
+    const reordered = [...conteudos];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+    const withOrdem = reordered.map((c, i) => ({ ...c, ordem: i + 1 }));
+    setConteudos(withOrdem);
+    setDraggingId(null); setDragOverId(null); dragIndexRef.current = null;
+    // Persiste no banco
+    await fetch(`/api/cursos/conteudo/reorder?contrato=${currentContract}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: withOrdem.map(c => ({ id: c.id, ordem: c.ordem })) }),
+    });
+  };
+
+  const handleDragEnd = () => { setDraggingId(null); setDragOverId(null); dragIndexRef.current = null; };
+
+  // ── Salvar nova URL de vídeo ──────────────────────────────────────────────────
+  const saveVideoUrl = async (id: number) => {
+    const raw = editingVideoUrl.trim();
+    if (!raw) { alert("Insira uma URL válida."); return; }
+    const embed = getYoutubeEmbedUrl(raw);
+    if (!embed) { alert("URL do YouTube inválida."); return; }
+    const prev = [...conteudos];
+    setConteudos(conteudos.map(c => c.id === id ? { ...c, url_video: embed } : c));
+    setEditingVideoId(null);
+    const res = await fetch(`/api/cursos/conteudo/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url_video: embed }),
+    });
+    if (!res.ok) { setConteudos(prev); alert("Erro ao salvar URL."); }
   };
 
   const saveAvaliacao = async () => {
@@ -791,17 +852,62 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
 
                       {conteudos.map((v, i) => {
                         const linked = questoesByConteudo(v.id);
+                        const isDragging = draggingId === v.id;
+                        const isDragOver = dragOverId === v.id && draggingId !== v.id;
                         return (
-                          <div key={v.id} className="border-2 border-slate-200 rounded-lg overflow-hidden">
+                          <div
+                            key={v.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, i)}
+                            onDragOver={(e) => handleDragOver(e, v.id)}
+                            onDrop={(e) => handleDrop(e, i)}
+                            onDragEnd={handleDragEnd}
+                            className={`border-2 rounded-lg overflow-hidden transition-all
+                              ${isDragging ? "opacity-40 scale-[0.98] border-dashed border-wfs-accent" : ""}
+                              ${isDragOver ? "border-wfs-accent shadow-lg shadow-wfs-accent/20 translate-y-[-2px]" : "border-slate-200"}
+                            `}
+                          >
                             <div className="flex items-center justify-between p-3 bg-slate-50">
-                              <div className="flex items-center gap-3">
-                                <span className="text-[10px] font-medium text-slate-400 bg-white w-6 h-6 flex items-center justify-center rounded-full border border-slate-200">{i + 1}</span>
-                                <Youtube className="w-4 h-4 text-red-500" />
-                                <span className="text-sm font-medium text-slate-700">{v.titulo}</span>
-                                <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">YouTube</span>
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                {/* Handle de drag */}
+                                <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 shrink-0" title="Arrastar para reordenar">
+                                  <GripVertical className="w-4 h-4" />
+                                </div>
+                                <span className="text-[10px] font-medium text-slate-400 bg-white w-6 h-6 flex items-center justify-center rounded-full border border-slate-200 shrink-0">{i + 1}</span>
+                                <Youtube className="w-4 h-4 text-red-500 shrink-0" />
+                                <span className="text-sm font-medium text-slate-700 truncate">{v.titulo}</span>
+                                <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium shrink-0">YouTube</span>
                               </div>
-                              <button type="button" onClick={() => deleteVideo(v.id)} className="text-slate-400 hover:text-wfs-accent transition-colors"><Trash2 className="w-4 h-4" /></button>
+                              <div className="flex items-center gap-1 shrink-0 ml-2">
+                                {/* Botão editar URL */}
+                                <button type="button"
+                                  onClick={() => { setEditingVideoId(v.id); setEditingVideoUrl(""); }}
+                                  className="text-blue-400 hover:text-blue-600 transition-colors p-1" title="Substituir URL do vídeo">
+                                  <Link2 className="w-4 h-4" />
+                                </button>
+                                <button type="button" onClick={() => deleteVideo(v.id)} className="text-slate-400 hover:text-wfs-accent transition-colors p-1"><Trash2 className="w-4 h-4" /></button>
+                              </div>
                             </div>
+
+                            {/* Painel de edição de URL */}
+                            {editingVideoId === v.id && (
+                              <div className="px-3 py-2 bg-blue-50 border-t border-blue-100 flex items-center gap-2">
+                                <Link2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                <input
+                                  className="input-field text-xs flex-1 py-1.5"
+                                  placeholder="Cole a nova URL do YouTube..."
+                                  value={editingVideoUrl}
+                                  onChange={e => setEditingVideoUrl(e.target.value)}
+                                  onKeyDown={e => { if (e.key === "Enter") saveVideoUrl(v.id); if (e.key === "Escape") setEditingVideoId(null); }}
+                                  autoFocus
+                                />
+                                <button type="button" onClick={() => saveVideoUrl(v.id)}
+                                  className="btn-primary text-xs px-3 py-1.5 shrink-0">Salvar</button>
+                                <button type="button" onClick={() => setEditingVideoId(null)}
+                                  className="text-xs px-2 py-1.5 text-slate-400 hover:text-slate-600 shrink-0">✕</button>
+                              </div>
+                            )}
+
                             <div className="p-3 bg-white border-t border-slate-100 space-y-2">
                               {linked.length > 0 && (
                                 <div className="space-y-1 mb-2">
