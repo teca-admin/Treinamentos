@@ -701,47 +701,93 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   );
 };
 
-// ── YouTube Player — detecção robusta de fim via postMessage + polling ──────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Extrai o video ID do YouTube de qualquer formato de URL e retorna a embed URL
+ *  com todos os parâmetros necessários já configurados. */
+function buildYoutubeEmbedUrl(src: string): string {
+  try {
+    const u = new URL(src);
+    let videoId = "";
+
+    if (u.hostname === "youtu.be") {
+      videoId = u.pathname.slice(1).split("?")[0];
+    } else if (u.hostname.includes("youtube.com")) {
+      if (u.pathname.startsWith("/embed/")) {
+        videoId = u.pathname.split("/embed/")[1].split("?")[0];
+      } else {
+        videoId = u.searchParams.get("v") || "";
+      }
+    }
+
+    if (!videoId) return src;
+
+    const params = new URLSearchParams({
+      enablejsapi: "1",
+      origin: window.location.origin,
+      controls: "1",          // mantém controles nativos (play/pause/volume/full)
+      rel: "0",               // sem vídeos relacionados
+      modestbranding: "1",
+      iv_load_policy: "3",    // sem anotações
+      disablekb: "1",         // sem atalhos de teclado
+      playsinline: "1",
+    });
+    return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+  } catch {
+    return src;
+  }
+}
+
+function formatSeconds(s: number): string {
+  if (!isFinite(s) || s < 0) return "--:--";
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
+// ── YouTube Player ────────────────────────────────────────────────────────────
 
 const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) => {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const endedRef = useRef(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Tracks last known playerState to detect -1→0 transition via polling
-  const lastStateRef = useRef<number | null>(null);
+
+  // HUD state
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [duration, setDuration] = useState<number | null>(null);
+  const [speed, setSpeed] = useState(1);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
+  const embedSrc = buildYoutubeEmbedUrl(src);
+
+  const postCmd = (func: string, args: any[] = []) => {
+    try {
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ event: "command", func, args }), "*"
+      );
+    } catch {}
+  };
 
   const triggerEnded = () => {
     if (endedRef.current) return;
     endedRef.current = true;
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    setPlaying(false);
     onEnded();
   };
 
-  const embedSrc = (() => {
-    try {
-      const u = new URL(src);
-      if (u.pathname.startsWith("/embed/")) {
-        u.searchParams.set("enablejsapi", "1");
-        u.searchParams.set("origin", window.location.origin);
-        u.searchParams.set("controls", "0");
-        u.searchParams.set("disablekb", "1");
-        u.searchParams.set("modestbranding", "1");
-        u.searchParams.set("rel", "0");
-        u.searchParams.set("iv_load_policy", "3");
-        u.searchParams.set("fs", "0");
-        return u.toString();
-      }
-    } catch {}
-    return src;
-  })();
+  const setPlaybackRate = (r: number) => {
+    setSpeed(r);
+    setShowSpeedMenu(false);
+    postCmd("setPlaybackRate", [r]);
+  };
 
-  // After iframe loads: subscribe to events + start polling as fallback
   const handleIframeLoad = () => {
     endedRef.current = false;
-    lastStateRef.current = null;
-
-    // Ask YouTube to start sending postMessage events
+    // Registra listeners de eventos do YouTube IFrame API
     try {
       iframeRef.current?.contentWindow?.postMessage(
         JSON.stringify({ event: "listening" }), "*"
@@ -749,48 +795,68 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
       iframeRef.current?.contentWindow?.postMessage(
         JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }), "*"
       );
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ event: "command", func: "addEventListener", args: ["onReady"] }), "*"
+      );
     } catch {}
 
-    // Polling fallback: ask YouTube for current time every 2s.
-    // When YouTube shows the replay screen the video is "ended" (state 0).
-    // We detect this by sending a "getCurrentTime" command and watching
-    // for the "infoDelivery" response where currentTime equals duration.
+    // Polling a cada 1s: pede currentTime, duration e playerState
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(() => {
       if (endedRef.current) { clearInterval(pollRef.current!); return; }
-      try {
-        iframeRef.current?.contentWindow?.postMessage(
-          JSON.stringify({ event: "command", func: "getPlayerState", args: [] }), "*"
-        );
-      } catch {}
-    }, 6000);
+      postCmd("getDuration");
+      postCmd("getCurrentTime");
+      postCmd("getPlayerState");
+    }, 1000);
   };
 
   useEffect(() => {
     endedRef.current = false;
-    lastStateRef.current = null;
+    setTimeRemaining(null);
+    setDuration(null);
+    setPlaying(false);
 
     const handler = (e: MessageEvent) => {
       try {
         const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        if (!data) return;
 
-        // Standard YouTube IFrame API event
-        if (data?.event === "onStateChange") {
-          const state = data?.info;
+        // Estado do player (play/pause/ended)
+        if (data.event === "onStateChange") {
+          const state = data.info;
           if (state === 0) { triggerEnded(); return; }
-          lastStateRef.current = state;
+          setPlaying(state === 1);
         }
 
-        // infoDelivery — comes from getPlayerState polling command
-        if (data?.event === "infoDelivery") {
-          const state = data?.info?.playerState ?? data?.info;
-          if (state === 0) { triggerEnded(); return; }
-          if (typeof state === "number") lastStateRef.current = state;
+        // Resposta de getDuration / getCurrentTime / getPlayerState
+        if (data.event === "infoDelivery" && data.info) {
+          const info = data.info;
+
+          // Estado via infoDelivery
+          if (typeof info.playerState === "number") {
+            if (info.playerState === 0) { triggerEnded(); return; }
+            setPlaying(info.playerState === 1);
+          }
+
+          // Duração
+          if (typeof info.duration === "number" && info.duration > 0) {
+            setDuration(info.duration);
+          }
+
+          // Tempo atual → calcula restante
+          if (typeof info.currentTime === "number") {
+            setDuration(prev => {
+              if (prev && prev > 0) {
+                setTimeRemaining(Math.max(0, prev - info.currentTime));
+              }
+              return prev;
+            });
+          }
         }
 
-        // Some embed versions wrap state differently
-        if (typeof data?.info?.playerState === "number" && data.info.playerState === 0) {
-          triggerEnded();
+        // Resposta direta de getDuration (alguns embeds)
+        if (typeof data.info === "number" && data.event === "getDuration") {
+          setDuration(data.info);
         }
       } catch {}
     };
@@ -800,7 +866,7 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
       window.removeEventListener("message", handler);
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     };
-  }, [src]); // reset when video src changes
+  }, [src]);
 
   const handleFullscreen = () => {
     const el = containerRef.current;
@@ -810,7 +876,7 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
   };
 
   return (
-    <div ref={containerRef} className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full bg-black" onClick={() => setShowSpeedMenu(false)}>
       <iframe
         ref={iframeRef}
         src={embedSrc}
@@ -820,13 +886,62 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
         title="YouTube video"
         onLoad={handleIframeLoad}
       />
-      <button
-        onClick={handleFullscreen}
-        className="absolute bottom-3 right-3 bg-black/70 text-white text-[10px] px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-black transition-colors"
-        title="Tela cheia"
-      >
-        <Maximize2 className="w-3 h-3" /> Tela cheia
-      </button>
+
+      {/* ── Overlay bloqueando end-screen e canto inferior esquerdo (ícone de link) ── */}
+      {/* Cobre a faixa inferior onde ficam "Mais vídeos" e ícone de link */}
+      <div className="absolute bottom-0 left-0 right-0 h-[15%] bg-black pointer-events-none" />
+      {/* Cobre o canto inferior esquerdo especificamente */}
+      <div className="absolute bottom-0 left-0 w-[12%] h-[20%] bg-black pointer-events-none" />
+
+      {/* ── HUD: tempo restante + velocidade + tela cheia ── */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 py-2 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+
+        {/* Tempo restante */}
+        <div className="flex items-center gap-1.5 pointer-events-none">
+          {timeRemaining !== null ? (
+            <span className="text-white text-xs font-mono font-medium bg-black/50 px-2 py-0.5 rounded">
+              ⏱ {formatSeconds(timeRemaining)} restantes
+            </span>
+          ) : (
+            <span className="text-white/40 text-[10px] font-mono">Carregando...</span>
+          )}
+        </div>
+
+        {/* Velocidade + Tela cheia */}
+        <div className="flex items-center gap-2 pointer-events-auto">
+
+          {/* Seletor de velocidade */}
+          <div className="relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowSpeedMenu(v => !v); }}
+              className="text-white text-[11px] font-bold bg-black/60 hover:bg-black/80 px-2.5 py-1 rounded transition-colors"
+              title="Velocidade de reprodução"
+            >
+              {speed}x
+            </button>
+            {showSpeedMenu && (
+              <div className="absolute bottom-8 right-0 bg-black/90 rounded-lg overflow-hidden shadow-xl border border-white/10 z-10">
+                {speeds.map(s => (
+                  <button key={s} onClick={(e) => { e.stopPropagation(); setPlaybackRate(s); }}
+                    className={`block w-full text-left px-4 py-1.5 text-xs font-medium transition-colors
+                      ${speed === s ? "bg-white/20 text-white" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
+                    {s}x {s === 1 ? "(normal)" : ""}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Tela cheia */}
+          <button
+            onClick={(e) => { e.stopPropagation(); handleFullscreen(); }}
+            className="text-white text-[10px] font-medium bg-black/60 hover:bg-black/80 px-2.5 py-1 rounded flex items-center gap-1 transition-colors"
+            title="Tela cheia"
+          >
+            <Maximize2 className="w-3 h-3" /> Tela cheia
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
