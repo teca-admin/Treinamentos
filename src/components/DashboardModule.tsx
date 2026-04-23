@@ -25,7 +25,7 @@ interface SurveyResponse {
 interface DashboardData {
   courseProgress: CourseProgress[];
   surveys: SurveyResponse[];
-  empCounts: { auxiliar: number; ope: number };
+  empCounts: { auxiliar: number; ope: number; analista: number; tst: number };
 }
 
 // ── Constantes ────────────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ export const DashboardModule = ({ currentContract }: { currentContract: Contract
   };
 
   const activeCourses = data.courseProgress.filter(isActive);
-  const totalEmp = data.empCounts.auxiliar + data.empCounts.ope;
+  const totalEmp = data.empCounts.auxiliar + data.empCounts.ope + data.empCounts.analista + data.empCounts.tst;
 
   const filteredProgress = progressFilter === "all"
     ? data.courseProgress
@@ -158,7 +158,7 @@ export const DashboardModule = ({ currentContract }: { currentContract: Contract
           icon={<Users className="w-5 h-5" />}
           label="Colaboradores"
           value={String(totalEmp)}
-          sub={`${data.empCounts.auxiliar} Aux · ${data.empCounts.ope} OPE`}
+          sub={`${data.empCounts.auxiliar} Aux · ${data.empCounts.ope} OPE · ${data.empCounts.analista} Analista · ${data.empCounts.tst} TST`}
           color="blue"
         />
         <KpiCard

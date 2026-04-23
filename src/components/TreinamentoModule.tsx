@@ -41,8 +41,10 @@ const TIPOS_CONTEUDO = ["SST", "Melhoria Contínua", "Informativo", "Comunicado"
 
 // Flags de público alvo — exibidas na lista de presença e controlam acesso no portal
 const PUBLICO_ALVO_FLAGS: { flag: string; label: string; cargo: string }[] = [
-  { flag: "Auxiliar", label: "Auxiliar", cargo: "AUXILIAR DE SERVICOS AEROPORTUARIOS/RAMPA" },
-  { flag: "OPE", label: "OPE", cargo: "OPERADOR DE EQUIPAMENTOS/RAMPA" },
+  { flag: "Auxiliar", label: "Auxiliar",  cargo: "AUXILIAR DE SERVICOS AEROPORTUARIOS/RAMPA" },
+  { flag: "OPE",      label: "OPE",       cargo: "OPERADOR DE EQUIPAMENTOS/RAMPA" },
+  { flag: "Analista", label: "Analista",  cargo: "ANALISTA DE MELHORIA CONTINUA" },
+  { flag: "TST",      label: "TST",       cargo: "TÉCNICO DE SEGURANÇA DO TRABALHO" },
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────────

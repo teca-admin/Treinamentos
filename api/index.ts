@@ -416,8 +416,12 @@ app.post("/api/pesquisa-satisfacao", async (req, res) => {
 // ── DASHBOARD ────────────────────────────────────────────────────────────────
 app.get("/api/dashboard", async (req, res) => {
   const { contrato } = req.query;
-  const AUXILIAR_CARGO = "AUXILIAR DE SERVICOS AEROPORTUARIOS/RAMPA";
-  const OPE_CARGO = "OPERADOR DE EQUIPAMENTOS/RAMPA";
+  const CARGO_MAP: Record<string, string> = {
+    "AUXILIAR DE SERVICOS AEROPORTUARIOS/RAMPA": "Auxiliar",
+    "OPERADOR DE EQUIPAMENTOS/RAMPA": "OPE",
+    "ANALISTA DE MELHORIA CONTINUA": "Analista",
+    "TÉCNICO DE SEGURANÇA DO TRABALHO": "TST",
+  };
 
   try {
     const [cursosRes, funcRes, resultsRes, surveysRes] = await Promise.all([
@@ -435,12 +439,12 @@ app.get("/api/dashboard", async (req, res) => {
       ? allFunc.filter((f: any) => !f.contrato || f.contrato === contrato)
       : allFunc;
 
-    const empAuxiliar = funcionarios.filter(
-      (f: any) => f.cargo?.trim().toUpperCase() === AUXILIAR_CARGO
-    ).length;
-    const empOPE = funcionarios.filter(
-      (f: any) => f.cargo?.trim().toUpperCase() === OPE_CARGO
-    ).length;
+    // Conta funcionários por flag (mesmo mapeamento do portal)
+    const countByFlag: Record<string, number> = { Auxiliar: 0, OPE: 0, Analista: 0, TST: 0 };
+    for (const f of funcionarios) {
+      const flag = CARGO_MAP[f.cargo?.trim().toUpperCase() as string];
+      if (flag && flag in countByFlag) countByFlag[flag]++;
+    }
 
     const approvedResults: any[] = resultsRes.data || [];
 
@@ -448,10 +452,12 @@ app.get("/api/dashboard", async (req, res) => {
       const pa: string[] = Array.isArray(c.publico_alvo) ? c.publico_alvo : [];
       let totalEmployees = 0;
       if (pa.length === 0) {
-        totalEmployees = empAuxiliar + empOPE;
+        // Sem restrição → conta todos os públicos conhecidos
+        totalEmployees = Object.values(countByFlag).reduce((a, b) => a + b, 0);
       } else {
-        if (pa.includes("Auxiliar")) totalEmployees += empAuxiliar;
-        if (pa.includes("OPE")) totalEmployees += empOPE;
+        for (const flag of pa) {
+          totalEmployees += countByFlag[flag] || 0;
+        }
       }
       const completedSet = new Set(
         approvedResults.filter((r: any) => r.curso_id === c.id).map((r: any) => r.funcionario_id)
@@ -464,7 +470,7 @@ app.get("/api/dashboard", async (req, res) => {
     res.json({
       courseProgress,
       surveys: surveysRes.error ? [] : (surveysRes.data || []),
-      empCounts: { auxiliar: empAuxiliar, ope: empOPE },
+      empCounts: { auxiliar: countByFlag.Auxiliar, ope: countByFlag.OPE, analista: countByFlag.Analista, tst: countByFlag.TST },
     });
   } catch (e: any) {
     res.status(500).json({ success: false, message: e.message });

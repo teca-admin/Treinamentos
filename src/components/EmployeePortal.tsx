@@ -24,6 +24,8 @@ interface Questao { id: number; enunciado: string; opcoes: Opcao[]; conteudo_id?
 const CARGO_TO_FLAG: Record<string, string> = {
   "AUXILIAR DE SERVICOS AEROPORTUARIOS/RAMPA": "Auxiliar",
   "OPERADOR DE EQUIPAMENTOS/RAMPA": "OPE",
+  "ANALISTA DE MELHORIA CONTINUA": "Analista",
+  "TÉCNICO DE SEGURANÇA DO TRABALHO": "TST",
 };
 
 function getEmployeeFlag(cargo: string): string | null {
