@@ -1,87 +1,50 @@
-import React, { useState } from "react";
-import { motion } from "motion/react";
-import { Eye, EyeOff } from "lucide-react";
-import { User } from "../types";
+@import "tailwindcss";
 
-export const Login = ({ onLogin }: { onLogin: (user: User) => void }) => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+@theme {
+  --color-wfs-bg: #F9FAFB;
+  --color-wfs-surface: #FFFFFF;
+  --color-wfs-surface2: #F3F4F6;
+  --color-wfs-accent: #EE2F24;
+  --color-wfs-accent-dark: #C0251B;
+  --color-wfs-accent-light: #FEF2F2;
+  --color-wfs-text: #111827;
+  --color-wfs-muted: #6B7280;
+  --color-wfs-hint: #9CA3AF;
+  --color-wfs-border: #E5E7EB;
+  --color-wfs-border2: #D1D5DB;
+  --color-wfs-success: #16A34A;
+  --color-wfs-danger: #DC2626;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      onLogin(data.user);
-    } else {
-      setError(data.message);
-    }
-  };
+  --font-sans: "Inter", "sans-serif";
+  --font-mono: "JetBrains Mono", "monospace";
+}
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-wfs-bg">
-      <img 
-        src="https://lh3.googleusercontent.com/d/1sNzDKhdh2zH8d8DoyqIjx8l5LzBEXN5g" 
-        alt="WFS Logo" 
-        className="absolute top-6 left-6 h-28 object-contain"
-      />
-      
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-wfs-surface p-8 max-w-sm w-full border border-wfs-border shadow-md rounded-sm"
-      >
-        <div className="text-center mb-8">
-          <h1 className="text-xl font-medium text-wfs-text">Acesso Administrativo</h1>
-          <p className="text-wfs-muted text-sm mt-1">Insira suas credenciais</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-mono text-wfs-muted mb-1  tracking-wider">Usuário</label>
-            <input 
-              type="text" 
-              className="input-field" 
-              value={username} 
-              onChange={e => setUsername(e.target.value)} 
-              required 
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-mono text-wfs-muted mb-1  tracking-wider">Senha</label>
-            <div className="relative">
-              <input 
-                type={showPassword ? "text" : "password"} 
-                className="input-field pr-10" 
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-                required 
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-wfs-hint hover:text-wfs-muted transition-colors"
-                aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-          {error && <p className="text-wfs-danger bg-wfs-accent-light px-3 py-2 text-xs font-medium rounded-sm border border-wfs-danger/20">{error}</p>}
-          <button type="submit" className="btn-primary w-full mt-2">
-            Entrar no Sistema
-          </button>
-        </form>
-        <div className="mt-6 text-center text-[10px] text-wfs-hint  font-mono tracking-widest border-t border-wfs-border pt-4">
-          Plataforma de Treinamentos WFS
-        </div>
-      </motion.div>
-    </div>
-  );
-};
+@layer base {
+  html {
+    font-size: 13px;
+  }
+  body {
+    @apply bg-wfs-bg text-wfs-text font-sans antialiased;
+  }
+}
+
+/* WFS Components */
+.btn-primary {
+  @apply bg-wfs-accent text-white px-4 py-2 font-medium text-[13px] rounded-sm hover:bg-wfs-accent-dark transition-colors disabled:opacity-50;
+}
+
+.btn-success {
+  @apply bg-wfs-success text-white px-4 py-2 font-bold text-[13px] rounded-sm hover:bg-green-700 transition-colors disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply bg-wfs-surface2 border border-wfs-border2 text-wfs-text px-4 py-2 font-medium text-[13px] rounded-sm hover:bg-slate-200 transition-colors disabled:opacity-50;
+}
+
+.card {
+  @apply bg-wfs-surface border border-wfs-border rounded-sm shadow-sm;
+}
+
+.input-field {
+  @apply w-full border border-wfs-border2 rounded-sm px-3 py-[10px] text-[14px] bg-wfs-surface text-wfs-text focus:outline-none focus:ring-1 focus:ring-wfs-accent focus:border-wfs-accent transition-colors placeholder:text-wfs-hint;
+}

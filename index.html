@@ -1,18 +1,18 @@
-<!doctype html>
-<html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WFS Treinamentos</title>
-    <!-- Favicon: Caderneta e Caneta symbol -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%2220%22 y=%2220%22 width=%2260%22 height=%2270%22 rx=%224%22 fill=%22%23EE2F24%22/><path d=%22M25 35h50M25 50h50M25 65h35%22 stroke=%22white%22 stroke-width=%224%22 stroke-linecap=%22round%22/><path d=%22M75 55l15-15-5-5-15 15v5h5z%22 fill=%22white%22 stroke=%22white%22 stroke-width=%222%22 stroke-linejoin=%22round%22/></svg>" />
-    <!-- Google Fonts: Inter and JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+let supabaseInstance: SupabaseClient | null = null;
+
+export const getSupabaseClient = async (): Promise<SupabaseClient> => {
+  if (supabaseInstance) {
+    return supabaseInstance;
+  }
+
+  const res = await fetch("/api/config/supabase");
+  const config = await res.json();
+  
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(config.url, config.key);
+  }
+  
+  return supabaseInstance;
+};
