@@ -878,6 +878,7 @@ const YoutubePlayer = ({ src, onEnded }: { src: string; onEnded: () => void }) =
   return (
     <div ref={containerRef} className="relative w-full h-full bg-black" onClick={() => setShowSpeedMenu(false)}>
       <iframe
+        key={embedSrc}
         ref={iframeRef}
         src={embedSrc}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
