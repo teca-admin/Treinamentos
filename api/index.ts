@@ -236,13 +236,16 @@ app.post("/api/treinamentos/responder", async (req, res) => {
   if (reprovadoCount >= 3) return res.status(400).json({ success: false, message: "Limite de tentativas excedido (3)." });
 
   const { data: avaliacao } = await supabase.from("avaliacoes").select("*").eq("curso_id", curso_id).single();
-  const status = nota >= (avaliacao?.nota_minima || 0) ? "Aprovado" : "Reprovado";
+  // Arredonda a nota recebida para evitar erros de ponto flutuante
+  const notaArredondada = Math.round(Number(nota));
+  const notaMinima = avaliacao?.nota_minima ?? 70;
+  const status = notaArredondada >= notaMinima ? "Aprovado" : "Reprovado";
   const today = new Date().toISOString().split('T')[0];
 
-  let { error } = await supabase.from("resultados_treinamento").insert([{ funcionario_id, curso_id, nota, status, data_conclusao: today, turno: turno || null }]);
+  let { error } = await supabase.from("resultados_treinamento").insert([{ funcionario_id, curso_id, nota: notaArredondada, status, data_conclusao: today, turno: turno || null }]);
 
   if (error && error.code === '42P01') {
-    const result = await supabase.from("treinamento_resultados").insert([{ funcionario_id, curso_id, nota, status, data_conclusao: today, turno: turno || null }]);
+    const result = await supabase.from("treinamento_resultados").insert([{ funcionario_id, curso_id, nota: notaArredondada, status, data_conclusao: today, turno: turno || null }]);
     error = result.error;
   }
 
@@ -354,6 +357,28 @@ app.get("/api/videos-assistidos/:funcionario_id/:curso_id", async (req, res) => 
 
   if (error) return res.status(500).json({ success: false, message: error.message });
   res.json({ watched: (data || []).map((r: any) => r.conteudo_id) });
+});
+
+// ── PESQUISA DE SATISFAÇÃO ────────────────────────────────────────────────────
+app.post("/api/pesquisa-satisfacao", async (req, res) => {
+  const { funcionario_id, curso_id, nome_opcional, setor, respostas, sugestao_gostou, sugestao_melhorar } = req.body;
+  if (!funcionario_id || !curso_id || !respostas)
+    return res.status(400).json({ success: false, message: "Parâmetros obrigatórios faltando" });
+
+  const today = new Date().toISOString().split('T')[0];
+  const { error } = await supabase.from("pesquisas_satisfacao").insert([{
+    funcionario_id,
+    curso_id,
+    nome_opcional: nome_opcional || null,
+    setor: setor || null,
+    respostas, // JSON com { q1: 4, q2: 5, ... }
+    sugestao_gostou: sugestao_gostou || null,
+    sugestao_melhorar: sugestao_melhorar || null,
+    data_resposta: today,
+  }]);
+
+  if (error) return res.status(400).json({ success: false, message: error.message });
+  res.json({ success: true });
 });
 
 export default app;

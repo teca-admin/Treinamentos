@@ -58,11 +58,21 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [isCursoLoading, setIsCursoLoading] = useState(false);
 
+  // ── Pesquisa de satisfação ────────────────────────────────────────────────────
+  const [surveyAnswers, setSurveyAnswers] = useState<Record<string, number>>({});
+  const [surveySetor, setSurveySetor] = useState("");
+  const [surveyNome, setSurveyNome] = useState("");
+  const [surveyGostou, setSurveyGostou] = useState("");
+  const [surveyMelhorar, setSurveyMelhorar] = useState("");
+  const [isSurveyLoading, setIsSurveyLoading] = useState(false);
+
   // ── Logout ────────────────────────────────────────────────────────────────────
   const handleLogout = () => {
     setEmployee(null); setStep(1); setCpf(""); setTurno("");
     setSelectedCurso(null); setContent(null); setResult(null);
     setItems([]); setAnswers({}); setCurrentItemIndex(0);
+    setSurveyAnswers({}); setSurveySetor(""); setSurveyNome("");
+    setSurveyGostou(""); setSurveyMelhorar("");
   };
 
   // ── Login ─────────────────────────────────────────────────────────────────────
@@ -227,10 +237,13 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
       const questoes: Questao[] = content?.questoes || [];
       let score = 0;
       if (questoes.length > 0) {
+        let acertos = 0;
         questoes.forEach((q) => {
           const correctOpt = q.opcoes.find((o) => o.correta === true || o.correta === 1);
-          if (correctOpt && answers[q.id] === correctOpt.id) score += 100 / questoes.length;
+          if (correctOpt && answers[q.id] === correctOpt.id) acertos++;
         });
+        // Arredonda para evitar erros de ponto flutuante (ex: 99.9999... ao invés de 100)
+        score = Math.round((acertos / questoes.length) * 100);
       } else { score = 100; }
 
       const res = await fetch("/api/treinamentos/responder", {
@@ -254,9 +267,37 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
         return { ...c, isApproved, reprovadoCount, isBlocked, blockReason };
       }));
 
-      setStep(4);
+      // Aprovado → vai para pesquisa (step 5); reprovado → resultado (step 4)
+      setStep(data.status === "Aprovado" ? 5 : 4);
     } catch { alert("Erro ao enviar avaliação. Verifique sua conexão."); }
     finally { setIsExamLoading(false); }
+  };
+
+  // ── Submit survey ─────────────────────────────────────────────────────────────
+  const submitSurvey = async (skip = false) => {
+    setIsSurveyLoading(true);
+    try {
+      if (!skip) {
+        await fetch("/api/pesquisa-satisfacao", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            funcionario_id: employee.id,
+            curso_id: selectedCurso.id,
+            nome_opcional: surveyNome || null,
+            setor: surveySetor || null,
+            respostas: surveyAnswers,
+            sugestao_gostou: surveyGostou || null,
+            sugestao_melhorar: surveyMelhorar || null,
+          }),
+        });
+      }
+    } catch { /* silencioso — não bloqueia o fluxo */ }
+    finally {
+      setIsSurveyLoading(false);
+      // Após pesquisa, mostra resultado final
+      setStep(4);
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -543,6 +584,117 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
               </motion.div>
             );
           })()}
+          {/* ── Step 5: Pesquisa de Satisfação (apenas aprovados) ── */}
+          {step === 5 && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              className="max-w-3xl mx-auto py-8 space-y-6">
+
+              {/* Cabeçalho */}
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-800">Avaliação de Reação do Treinamento</h2>
+                    <p className="text-xs text-slate-400">Sua opinião é muito importante para melhorarmos nossos treinamentos.</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-medium text-slate-400 block mb-1 tracking-wider">NOME (opcional)</label>
+                    <input className="input-field text-sm" placeholder="Seu nome..." value={surveyNome} onChange={e => setSurveyNome(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-medium text-slate-400 block mb-1 tracking-wider">SETOR <span className="text-wfs-accent">*</span></label>
+                    <select className="input-field text-sm" value={surveySetor} onChange={e => setSurveySetor(e.target.value)} required>
+                      <option value="">Selecione seu setor...</option>
+                      <option>Importação</option>
+                      <option>Internação</option>
+                      <option>Carga Nacional</option>
+                      <option>Paletizada</option>
+                      <option>Exportação</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Escala de referência */}
+              <div className="flex flex-wrap gap-2 px-1">
+                {[["1","Péssimo","bg-red-100 text-red-700"],["2","Ruim","bg-orange-100 text-orange-700"],["3","Regular","bg-yellow-100 text-yellow-700"],["4","Bom","bg-blue-100 text-blue-700"],["5","Excelente","bg-green-100 text-green-700"]].map(([n,l,cls]) => (
+                  <span key={n} className={`px-3 py-1 rounded-full text-[11px] font-semibold ${cls}`}>{n} — {l}</span>
+                ))}
+              </div>
+
+              {/* Questões */}
+              {[
+                [1, "Como você avalia o conteúdo apresentado no treinamento?"],
+                [2, "O treinamento foi claro e fácil de entender?"],
+                [3, "O instrutor demonstrou domínio do assunto?"],
+                [4, "O tempo de duração do treinamento foi adequado?"],
+                [5, "Os exemplos utilizados foram aplicáveis ao ambiente logístico?"],
+                [6, "O treinamento contribuiu para aumentar sua percepção de riscos?"],
+                [7, "Você se sente mais preparado para reportar acidentes e incidentes?"],
+                [8, "Os recursos utilizados (slides, imagens, exemplos) foram adequados?"],
+                [9, "Você recomendaria este treinamento para outros colaboradores?"],
+                [10, "Sua satisfação geral com o treinamento foi:"],
+              ].map(([num, pergunta]) => {
+                const key = `q${num}`;
+                const val = surveyAnswers[key];
+                const colors = ["","bg-red-500","bg-orange-500","bg-yellow-500","bg-blue-500","bg-green-500"];
+                return (
+                  <div key={key} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                    <p className="text-sm font-medium text-slate-700 mb-3">
+                      <span className="text-wfs-accent font-bold mr-1">{num as number}.</span> {pergunta as string}
+                    </p>
+                    <div className="flex gap-2">
+                      {[1,2,3,4,5].map(n => (
+                        <button key={n} type="button"
+                          onClick={() => setSurveyAnswers(prev => ({ ...prev, [key]: n }))}
+                          className={`flex-1 h-10 rounded-lg font-bold text-sm transition-all border-2 ${val === n ? `${colors[n]} text-white border-transparent shadow-md scale-105` : "border-slate-200 text-slate-400 hover:border-slate-400 bg-white"}`}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Sugestões abertas */}
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-4">
+                <h3 className="text-sm font-semibold text-slate-700 border-b pb-2">💬 Sugestões de Melhoria</h3>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 block mb-1">O que você mais gostou no treinamento?</label>
+                  <textarea className="input-field text-sm w-full resize-none" rows={2}
+                    placeholder="Compartilhe o que foi mais valioso para você..."
+                    value={surveyGostou} onChange={e => setSurveyGostou(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 block mb-1">O que pode ser melhorado?</label>
+                  <textarea className="input-field text-sm w-full resize-none" rows={2}
+                    placeholder="Sua sugestão nos ajuda a melhorar..."
+                    value={surveyMelhorar} onChange={e => setSurveyMelhorar(e.target.value)} />
+                </div>
+              </div>
+
+              {/* Botões */}
+              <div className="flex flex-col sm:flex-row gap-3 pb-8">
+                <button
+                  onClick={() => submitSurvey(false)}
+                  disabled={isSurveyLoading || !surveySetor || Object.keys(surveyAnswers).length < 10}
+                  className="flex-1 bg-wfs-accent hover:bg-red-700 disabled:opacity-50 text-white py-4 rounded-lg font-medium text-xs tracking-[0.2em] transition-all shadow-lg disabled:cursor-not-allowed">
+                  {isSurveyLoading ? "Enviando..." : "Enviar Avaliação"}
+                </button>
+                <button
+                  onClick={() => submitSurvey(true)}
+                  disabled={isSurveyLoading}
+                  className="px-6 py-4 rounded-lg font-medium text-xs text-slate-400 hover:text-slate-600 border border-slate-200 transition-all">
+                  Pular
+                </button>
+              </div>
+            </motion.div>
+          )}
+
         </div>
       </div>
     </div>
