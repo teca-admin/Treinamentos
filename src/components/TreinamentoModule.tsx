@@ -3,6 +3,7 @@ import { Plus, Video, ClipboardList, Trash2, Save, CheckCircle, X, Image as Imag
 import { motion, AnimatePresence } from "motion/react";
 import { User, Contract } from "../types";
 import { getSupabaseClient } from "../lib/supabase";
+import { DashboardModule } from "./DashboardModule";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -483,13 +484,21 @@ export const TreinamentoModule = ({ user, currentContract }: { user: User; curre
     <div className="p-6">
       {/* Tabs */}
       <div className="flex gap-4 border-b mb-6">
-        {["cursos", "resultados"].map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`pb-2 px-4 text-xs font-medium tracking-wider transition-colors ${tab === t ? "border-b-2 border-wfs-accent text-wfs-accent" : "text-slate-400 hover:text-slate-600"}`}>
-            {t}
+        {[
+          { value: "dashboard", label: "Dashboard" },
+          { value: "cursos",    label: "Cursos" },
+          { value: "resultados", label: "Resultados" },
+        ].map(({ value, label }) => (
+          <button key={value} onClick={() => setTab(value)}
+            className={`pb-2 px-4 text-xs font-medium tracking-wider transition-colors ${tab === value ? "border-b-2 border-wfs-accent text-wfs-accent" : "text-slate-400 hover:text-slate-600"}`}>
+            {label}
           </button>
         ))}
       </div>
+
+      {/* Dashboard Tab */}
+      {tab === "dashboard" && <DashboardModule currentContract={currentContract} />}
+
 
       {/* Cursos Tab */}
       {tab === "cursos" && (

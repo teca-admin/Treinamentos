@@ -61,7 +61,6 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
   // ── Pesquisa de satisfação ────────────────────────────────────────────────────
   const [surveyAnswers, setSurveyAnswers] = useState<Record<string, number>>({});
   const [surveySetor, setSurveySetor] = useState("");
-  const [surveyNome, setSurveyNome] = useState("");
   const [surveyGostou, setSurveyGostou] = useState("");
   const [surveyMelhorar, setSurveyMelhorar] = useState("");
   const [isSurveyLoading, setIsSurveyLoading] = useState(false);
@@ -71,7 +70,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
     setEmployee(null); setStep(1); setCpf(""); setTurno("");
     setSelectedCurso(null); setContent(null); setResult(null);
     setItems([]); setAnswers({}); setCurrentItemIndex(0);
-    setSurveyAnswers({}); setSurveySetor(""); setSurveyNome("");
+    setSurveyAnswers({}); setSurveySetor("");
     setSurveyGostou(""); setSurveyMelhorar("");
   };
 
@@ -284,7 +283,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
           body: JSON.stringify({
             funcionario_id: employee.id,
             curso_id: selectedCurso.id,
-            nome_opcional: surveyNome || null,
+            nome_opcional: null,
             setor: surveySetor || null,
             respostas: surveyAnswers,
             sugestao_gostou: surveyGostou || null,
@@ -600,11 +599,7 @@ export const EmployeePortal = ({ onExit }: { onExit?: () => void }) => {
                     <p className="text-xs text-slate-400">Sua opinião é muito importante para melhorarmos nossos treinamentos.</p>
                   </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-medium text-slate-400 block mb-1 tracking-wider">NOME (opcional)</label>
-                    <input className="input-field text-sm" placeholder="Seu nome..." value={surveyNome} onChange={e => setSurveyNome(e.target.value)} />
-                  </div>
+                <div className="mt-4 pt-4 border-t border-slate-100">
                   <div>
                     <label className="text-[10px] font-medium text-slate-400 block mb-1 tracking-wider">SETOR <span className="text-wfs-accent">*</span></label>
                     <select className="input-field text-sm" value={surveySetor} onChange={e => setSurveySetor(e.target.value)} required>

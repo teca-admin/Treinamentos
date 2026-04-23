@@ -413,4 +413,62 @@ app.post("/api/pesquisa-satisfacao", async (req, res) => {
   res.json({ success: true });
 });
 
+// ── DASHBOARD ────────────────────────────────────────────────────────────────
+app.get("/api/dashboard", async (req, res) => {
+  const { contrato } = req.query;
+  const AUXILIAR_CARGO = "AUXILIAR DE SERVICOS AEROPORTUARIOS/RAMPA";
+  const OPE_CARGO = "OPERADOR DE EQUIPAMENTOS/RAMPA";
+
+  try {
+    const [cursosRes, funcRes, resultsRes, surveysRes] = await Promise.all([
+      supabase.from("cursos").select("id, nome, publico_alvo, data_inicio, data_fim, tipo_conteudo, contrato"),
+      supabase.from("funcionarios").select("id, cargo, contrato"),
+      supabase.from("resultados_treinamento").select("curso_id, funcionario_id").eq("status", "Aprovado"),
+      supabase.from("pesquisas_satisfacao").select("curso_id, respostas"),
+    ]);
+
+    let cursos: any[] = cursosRes.data || [];
+    if (contrato) cursos = cursos.filter((c: any) => !c.contrato || c.contrato === contrato);
+
+    const allFunc: any[] = funcRes.data || [];
+    const funcionarios = contrato
+      ? allFunc.filter((f: any) => !f.contrato || f.contrato === contrato)
+      : allFunc;
+
+    const empAuxiliar = funcionarios.filter(
+      (f: any) => f.cargo?.trim().toUpperCase() === AUXILIAR_CARGO
+    ).length;
+    const empOPE = funcionarios.filter(
+      (f: any) => f.cargo?.trim().toUpperCase() === OPE_CARGO
+    ).length;
+
+    const approvedResults: any[] = resultsRes.data || [];
+
+    const courseProgress = cursos.map((c: any) => {
+      const pa: string[] = Array.isArray(c.publico_alvo) ? c.publico_alvo : [];
+      let totalEmployees = 0;
+      if (pa.length === 0) {
+        totalEmployees = empAuxiliar + empOPE;
+      } else {
+        if (pa.includes("Auxiliar")) totalEmployees += empAuxiliar;
+        if (pa.includes("OPE")) totalEmployees += empOPE;
+      }
+      const completedSet = new Set(
+        approvedResults.filter((r: any) => r.curso_id === c.id).map((r: any) => r.funcionario_id)
+      );
+      const completed = completedSet.size;
+      const pct = totalEmployees > 0 ? Math.round((completed / totalEmployees) * 100) : 0;
+      return { id: c.id, nome: c.nome, publico_alvo: pa, data_inicio: c.data_inicio, data_fim: c.data_fim, tipo_conteudo: c.tipo_conteudo, totalEmployees, completed, pct };
+    });
+
+    res.json({
+      courseProgress,
+      surveys: surveysRes.error ? [] : (surveysRes.data || []),
+      empCounts: { auxiliar: empAuxiliar, ope: empOPE },
+    });
+  } catch (e: any) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 export default app;
