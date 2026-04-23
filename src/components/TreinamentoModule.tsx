@@ -43,8 +43,9 @@ const TIPOS_CONTEUDO = ["SST", "Melhoria Contínua", "Informativo", "Comunicado"
 const PUBLICO_ALVO_FLAGS: { flag: string; label: string; cargo: string }[] = [
   { flag: "Auxiliar", label: "Auxiliar",  cargo: "AUXILIAR DE SERVICOS AEROPORTUARIOS/RAMPA" },
   { flag: "OPE",      label: "OPE",       cargo: "OPERADOR DE EQUIPAMENTOS/RAMPA" },
-  { flag: "Analista", label: "Analista",  cargo: "ANALISTA DE MELHORIA CONTINUA" },
+  { flag: "Analista", label: "Analista",  cargo: "ANALISTA DE MELHORIA CONTINUA I" },
   { flag: "TST",      label: "TST",       cargo: "TÉCNICO DE SEGURANÇA DO TRABALHO" },
+  { flag: "Lider",    label: "Líder",     cargo: "LIDER DE CARGAS II/RAMPA" },
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────────

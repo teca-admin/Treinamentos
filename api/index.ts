@@ -419,8 +419,9 @@ app.get("/api/dashboard", async (req, res) => {
   const CARGO_MAP: Record<string, string> = {
     "AUXILIAR DE SERVICOS AEROPORTUARIOS/RAMPA": "Auxiliar",
     "OPERADOR DE EQUIPAMENTOS/RAMPA": "OPE",
-    "ANALISTA DE MELHORIA CONTINUA": "Analista",
+    "ANALISTA DE MELHORIA CONTINUA I": "Analista",
     "TÉCNICO DE SEGURANÇA DO TRABALHO": "TST",
+    "LIDER DE CARGAS II/RAMPA": "Lider",
   };
 
   try {
@@ -440,7 +441,7 @@ app.get("/api/dashboard", async (req, res) => {
       : allFunc;
 
     // Conta funcionários por flag (mesmo mapeamento do portal)
-    const countByFlag: Record<string, number> = { Auxiliar: 0, OPE: 0, Analista: 0, TST: 0 };
+    const countByFlag: Record<string, number> = { Auxiliar: 0, OPE: 0, Analista: 0, TST: 0, Lider: 0 };
     for (const f of funcionarios) {
       const flag = CARGO_MAP[f.cargo?.trim().toUpperCase() as string];
       if (flag && flag in countByFlag) countByFlag[flag]++;
@@ -470,7 +471,7 @@ app.get("/api/dashboard", async (req, res) => {
     res.json({
       courseProgress,
       surveys: surveysRes.error ? [] : (surveysRes.data || []),
-      empCounts: { auxiliar: countByFlag.Auxiliar, ope: countByFlag.OPE, analista: countByFlag.Analista, tst: countByFlag.TST },
+      empCounts: { auxiliar: countByFlag.Auxiliar, ope: countByFlag.OPE, analista: countByFlag.Analista, tst: countByFlag.TST, lider: countByFlag.Lider },
     });
   } catch (e: any) {
     res.status(500).json({ success: false, message: e.message });
