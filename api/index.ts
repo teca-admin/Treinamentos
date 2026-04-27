@@ -421,15 +421,16 @@ app.get("/api/dashboard", async (req, res) => {
     "OPERADOR DE EQUIPAMENTOS/RAMPA": "OPE",
     "ANALISTA DE MELHORIA CONTINUA I": "Analista",
     "TÉCNICO DE SEGURANÇA DO TRABALHO": "TST",
+    "TECNICO DE SEGURANCA DO TRABALHO II": "TST",
     "LIDER DE CARGAS II/RAMPA": "Lider",
   };
 
   try {
     const [cursosRes, funcRes, resultsRes, surveysRes] = await Promise.all([
       supabase.from("cursos").select("id, nome, publico_alvo, data_inicio, data_fim, tipo_conteudo, contrato"),
-      supabase.from("funcionarios").select("id, cargo, contrato"),
+      supabase.from("funcionarios").select("id, cargo, contrato").eq("status", "ativo"),
       supabase.from("resultados_treinamento").select("curso_id, funcionario_id").eq("status", "Aprovado"),
-      supabase.from("pesquisas_satisfacao").select("curso_id, respostas"),
+      supabase.from("pesquisas_satisfacao").select("curso_id, respostas, sugestao_gostou, sugestao_melhorar"),
     ]);
 
     let cursos: any[] = cursosRes.data || [];

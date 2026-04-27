@@ -20,6 +20,8 @@ interface CourseProgress {
 interface SurveyResponse {
   curso_id: number;
   respostas: Record<string, number>;
+  sugestao_gostou?: string | null;
+  sugestao_melhorar?: string | null;
 }
 
 interface DashboardData {
@@ -361,6 +363,38 @@ export const DashboardModule = ({ currentContract }: { currentContract: Contract
                 );
               })}
             </div>
+
+            {/* Sugestões abertas */}
+            {(() => {
+              const gostou = filteredSurveys.filter(s => s.sugestao_gostou).map(s => s.sugestao_gostou as string);
+              const melhorar = filteredSurveys.filter(s => s.sugestao_melhorar).map(s => s.sugestao_melhorar as string);
+              if (gostou.length === 0 && melhorar.length === 0) return null;
+              return (
+                <div className="space-y-4 border-t border-slate-100 pt-4">
+                  <p className="text-xs font-semibold text-slate-700">💬 Sugestões dos Colaboradores</p>
+                  {gostou.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold text-green-700 tracking-widest">O QUE MAIS GOSTARAM</p>
+                      {gostou.map((s, i) => (
+                        <div key={i} className="text-xs text-slate-600 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
+                          {s}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {melhorar.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold text-yellow-700 tracking-widest">O QUE PODE MELHORAR</p>
+                      {melhorar.map((s, i) => (
+                        <div key={i} className="text-xs text-slate-600 bg-yellow-50 border border-yellow-100 rounded-lg px-3 py-2">
+                          {s}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
